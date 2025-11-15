@@ -1,21 +1,31 @@
-go-graphql-client
-=======
+gqlclient
+=========
 
 [![Unit tests](https://github.com/llehouerou/gqlclient/actions/workflows/test.yml/badge.svg)](https://github.com/llehouerou/gqlclient/actions/workflows/test.yml)
 
-**Preface:** This is a fork of `https://github.com/shurcooL/graphql` with extended features (subscription client, named operation)
+## About This Project
 
-The subscription client follows Apollo client specification https://github.com/apollographql/subscriptions-transport-ws/blob/master/PROTOCOL.md, using websocket protocol with https://github.com/nhooyr/websocket, a minimal and idiomatic WebSocket library for Go.
+This project is a fork of [`github.com/hasura/go-graphql-client`](https://github.com/hasura/go-graphql-client), which itself was originally forked from [`github.com/shurcooL/graphql`](https://github.com/shurcooL/graphql).
 
-Package `graphql` provides a GraphQL client implementation.
+### Key Changes from Upstream
 
-For more information, see package [`github.com/shurcooL/githubv4`](https://github.com/shurcooL/githubv4), which is a specialized version targeting GitHub GraphQL API v4. That package is driving the feature development.
+This fork has diverged significantly from the original project:
 
-**Status:** In active early research and development. The API will change when opportunities for improvement are discovered; it is not yet frozen.
+- **Removed WebSocket subscription support**: The subscription client and all related WebSocket functionality have been removed to simplify the codebase and reduce dependencies
+- **Removed examples**: All example code (graphqldev, realworld, subscription examples) has been removed
+- **Module rename**: Changed from `github.com/hasura/go-graphql-client` to `github.com/llehouerou/gqlclient` for a shorter, more convenient import path
+- **Modernization**: Updated to Go 1.25+ with modern Go idioms and tooling
 
-**Note**: Before v0.8.0, `QueryRaw`, `MutateRaw` and `Subscribe` methods return `*json.RawMessage`. This output type is redundant to be decoded. From v0.8.0, the output type is changed to `[]byte`.
+Due to the extent of these changes, this project warrants its own module name and independent development path.
 
-- [go-graphql-client](#go-graphql-client)
+### What This Library Provides
+
+Package `gqlclient` provides a simple, reflection-based GraphQL client implementation for Go. It focuses on query and mutation operations via HTTP, with a clean API for constructing GraphQL queries from Go structs.
+
+- [gqlclient](#gqlclient)
+	- [About This Project](#about-this-project)
+		- [Key Changes from Upstream](#key-changes-from-upstream)
+		- [What This Library Provides](#what-this-library-provides)
 	- [Installation](#installation)
 	- [Usage](#usage)
 		- [Authentication](#authentication)
@@ -27,18 +37,8 @@ For more information, see package [`github.com/shurcooL/githubv4`](https://githu
 		- [Specify GraphQL type name](#specify-graphql-type-name)
 		- [Mutations](#mutations)
 			- [Mutations Without Fields](#mutations-without-fields)
-		- [Subscription](#subscription)
-			- [Usage](#usage-1)
-			- [Subscribe](#subscribe)
-			- [Stop the subscription](#stop-the-subscription)
-			- [Authentication](#authentication-1)
-			- [Options](#options)
-			- [Events](#events)
-			- [Custom HTTP Client](#custom-http-client)
-			- [Custom WebSocket client](#custom-websocket-client)
-		- [Options](#options-1)
+		- [Options](#options)
 		- [Execute pre-built query](#execute-pre-built-query)
-		- [With operation name (deprecated)](#with-operation-name-deprecated)
 		- [Raw bytes response](#raw-bytes-response)
 		- [Multiple mutations with ordered map](#multiple-mutations-with-ordered-map)
 		- [Debugging and Unit test](#debugging-and-unit-test)
@@ -48,10 +48,10 @@ For more information, see package [`github.com/shurcooL/githubv4`](https://githu
   
 ## Installation
 
-`go-graphql-client` requires Go version 1.16 or later. For older Go versions, downgrade the library version below v0.7.1.
+`gqlclient` requires Go version 1.25 or later.
 
 ```bash
-go get -u github.com/llehouerou/gqlclient
+go get github.com/llehouerou/gqlclient
 ```
 
 ## Usage
@@ -438,200 +438,6 @@ fmt.Printf("Created a review: %s.\n", m.CreateReview)
 // Created a review: .
 ```
 
-### Subscription
-
-#### Usage
-
-Construct a Subscription client, specifying the GraphQL server URL.
-
-```Go
-client := graphql.NewSubscriptionClient("wss://example.com/graphql")
-defer client.Close()
-
-// Subscribe subscriptions
-// ...
-// finally run the client
-client.Run()
-```
-
-#### Subscribe
-
-To make a GraphQL subscription, you need to define a corresponding Go type.
-
-For example, to make the following GraphQL query:
-
-```GraphQL
-subscription {
-	me {
-		name
-	}
-}
-```
-
-You can define this variable:
-
-```Go
-var subscription struct {
-	Me struct {
-		Name string
-	}
-}
-```
-
-Then call `client.Subscribe`, passing a pointer to it:
-
-```Go
-subscriptionId, err := client.Subscribe(&query, nil, func(dataValue []byte, errValue error) error {
-	if errValue != nil {
-		// handle error
-		// if returns error, it will failback to `onError` event
-		return nil
-	}
-	data := query{}
-	// use the github.com/llehouerou/gqlclient/pkg/jsonutil package
-	err := jsonutil.UnmarshalGraphQL(dataValue, &data)
-
-	fmt.Println(query.Me.Name)
-
-	// Output: Luke Skywalker
-	return nil
-})
-
-if err != nil {
-	// Handle error.
-}
-```
-
-#### Stop the subscription
-
-You can programmatically stop the subscription while the client is running by using the `Unsubscribe` method, or returning a special error to stop it in the callback.
-
-```Go
-subscriptionId, err := client.Subscribe(&query, nil, func(dataValue []byte, errValue error) error {
-	// ...
-	// return this error to stop the subscription in the callback
-	return graphql.ErrSubscriptionStopped
-})
-
-if err != nil {
-	// Handle error.
-}
-
-// unsubscribe the subscription while the client is running with the subscription ID
-client.Unsubscribe(subscriptionId)
-```
-
-#### Authentication
-
-The subscription client is authenticated with GraphQL server through connection params:
-
-```Go
-client := graphql.NewSubscriptionClient("wss://example.com/graphql").
-	WithConnectionParams(map[string]interface{}{
-		"headers": map[string]string{
-				"authentication": "...",
-		},
-	})
-
-```
-
-#### Options
-
-```Go
-client.
-	//  write timeout of websocket client
-	WithTimeout(time.Minute). 
-	// When the websocket server was stopped, the client will retry connecting every second until timeout
-	WithRetryTimeout(time.Minute).
-	// sets loging function to print out received messages. By default, nothing is printed
-	WithLog(log.Println).
-	// max size of response message
-	WithReadLimit(10*1024*1024).
-	// these operation event logs won't be printed
-	WithoutLogTypes(graphql.GQL_DATA, graphql.GQL_CONNECTION_KEEP_ALIVE)
-
-```
-
-#### Events
-
-```Go
-// OnConnected event is triggered when the websocket connected to GraphQL server sucessfully
-client.OnConnected(fn func())
-
-// OnDisconnected event is triggered when the websocket client was disconnected
-client.OnDisconnected(fn func())
-
-// OnError event is triggered when there is any connection error. This is bottom exception handler level
-// If this function is empty, or returns nil, the error is ignored
-// If returns error, the websocket connection will be terminated
-client.OnError(onError func(sc *SubscriptionClient, err error) error)
-```
-
-#### Custom HTTP Client
-
-Use `WithWebSocketOptions` to customize the HTTP client which is used by the subscription client.
-
-```go
-client.WithWebSocketOptions(WebsocketOptions{
-	HTTPClient: &http.Client{
-		Transport: http.DefaultTransport,
-		Timeout: time.Minute,
-	}
-})
-```
-
-#### Custom WebSocket client
-
-By default the subscription client uses [nhooyr WebSocket client](https://github.com/nhooyr/websocket). If you need to customize the client, or prefer using [Gorilla WebSocket](https://github.com/gorilla/websocket), let's follow the Websocket interface and replace the constructor with `WithWebSocket` method:
-
-```go
-// WebsocketHandler abstracts WebSocket connection functions
-// ReadJSON and WriteJSON data of a frame from the WebSocket connection.
-// Close the WebSocket connection.
-type WebsocketConn interface {
-	ReadJSON(v interface{}) error
-	WriteJSON(v interface{}) error
-	Close() error
-	// SetReadLimit sets the maximum size in bytes for a message read from the peer. If a
-	// message exceeds the limit, the connection sends a close message to the peer
-	// and returns ErrReadLimit to the application.
-	SetReadLimit(limit int64)
-}
-
-// WithWebSocket replaces customized websocket client constructor
-func (sc *SubscriptionClient) WithWebSocket(fn func(sc *SubscriptionClient) (WebsocketConn, error)) *SubscriptionClient
-```
-
-**Example**
-
-```Go
-
-// the default websocket constructor
-func newWebsocketConn(sc *SubscriptionClient) (WebsocketConn, error) {
-	options := &websocket.DialOptions{
-		Subprotocols: []string{"graphql-ws"},
-	}
-	c, _, err := websocket.Dial(sc.GetContext(), sc.GetURL(), options)
-	if err != nil {
-		return nil, err
-	}
-
-	// The default WebsocketHandler implementation using nhooyr's
-	return &WebsocketHandler{
-		ctx:     sc.GetContext(),
-		Conn:    c,
-		timeout: sc.GetTimeout(),
-	}, nil
-}
-
-client := graphql.NewSubscriptionClient("wss://example.com/graphql")
-defer client.Close()
-
-client.WithWebSocket(newWebsocketConn)
-
-client.Run()
-```
-
 ### Options
 
 There are extensible parts in the GraphQL query that we sometimes use. They are optional so that we shouldn't required them in the method. To make it flexible, we can abstract these options as optional arguments that follow this interface.
@@ -701,18 +507,6 @@ res := struct {
 if err := client.Exec(ctx, query, &res, map[string]any{}); err != nil {
 	panic(err)
 }
-
-subscription := "subscription{something(where: {" + strings.Join(filters, ", ") + "}){id}}"
-subscriptionId, err := subscriptionClient.Exec(subscription, nil, func(dataValue []byte, errValue error) error {
-	if errValue != nil {
-		// handle error
-		// if returns error, it will failback to `onError` event
-		return nil
-	}
-	data := query{}
-	err := json.Unmarshal(dataValue, &data)
-	// ...
-})
 ```
 
 If you prefer decoding JSON yourself, use `ExecRaw` instead.
@@ -731,30 +525,14 @@ if err != nil {
 err = json.Unmarshal(raw, &res)
 ```
 
-### With operation name (deprecated)
-
-Operation name is still on API decision plan https://github.com/shurcooL/graphql/issues/12. However, in my opinion separate methods are easier choice to avoid breaking changes
-
-```Go
-func (c *Client) NamedQuery(ctx context.Context, name string, q interface{}, variables map[string]interface{}) error
-
-func (c *Client) NamedMutate(ctx context.Context, name string, q interface{}, variables map[string]interface{}) error
-
-func (sc *SubscriptionClient) NamedSubscribe(name string, v interface{}, variables map[string]interface{}, handler func(message []byte, err error) error) (string, error)
-```
-
 ### Raw bytes response
 
-In the case we developers want to decode JSON response ourself. Moreover, the default `UnmarshalGraphQL` function isn't ideal with complicated nested interfaces
+If you want to decode JSON response yourself, or the default `UnmarshalGraphQL` function isn't ideal for your use case, you can use the `*Raw` methods:
 
 ```Go
 func (c *Client) QueryRaw(ctx context.Context, q interface{}, variables map[string]interface{}) ([]byte, error)
 
 func (c *Client) MutateRaw(ctx context.Context, q interface{}, variables map[string]interface{}) ([]byte, error)
-
-func (c *Client) NamedQueryRaw(ctx context.Context, name string, q interface{}, variables map[string]interface{}) ([]byte, error)
-
-func (c *Client) NamedMutateRaw(ctx context.Context, name string, q interface{}, variables map[string]interface{}) ([]byte, error)
 ```
 
 ### Multiple mutations with ordered map
@@ -834,37 +612,35 @@ Enable debug mode with the `WithDebug` function. If the request is failed, the r
 Because the GraphQL query string is generated in runtime using reflection, it isn't really safe. To assure the GraphQL query is expected, it's necessary to write some unit test for query construction.
 
 ```go
-// ConstructQuery build GraphQL query string from struct and variables
+// ConstructQuery builds GraphQL query string from struct and variables
 func ConstructQuery(v interface{}, variables map[string]interface{}, options ...Option) (string, error)
 
-// ConstructQuery build GraphQL mutation string from struct and variables
+// ConstructMutation builds GraphQL mutation string from struct and variables
 func ConstructMutation(v interface{}, variables map[string]interface{}, options ...Option) (string, error)
-
-// ConstructSubscription build GraphQL subscription string from struct and variables
-func ConstructSubscription(v interface{}, variables map[string]interface{}, options ...Option) (string, error) 
 
 // UnmarshalGraphQL parses the JSON-encoded GraphQL response data and stores
 // the result in the GraphQL query data structure pointed to by v.
-func UnmarshalGraphQL(data []byte, v interface{}) error 
+func UnmarshalGraphQL(data []byte, v interface{}) error
 ```
 
-Directories
------------
+## Directories
 
-| Path                                                                                   | Synopsis                                                                                                        |
-|----------------------------------------------------------------------------------------|-----------------------------------------------------------------------------------------------------------------|
-| [example/graphqldev](https://godoc.org/github.com/shurcooL/graphql/example/graphqldev) | graphqldev is a test program currently being used for developing graphql package.                               |
-| [ident](https://godoc.org/github.com/shurcooL/graphql/ident)                           | Package ident provides functions for parsing and converting identifier names between various naming convention. |
-| [internal/jsonutil](https://godoc.org/github.com/shurcooL/graphql/internal/jsonutil)   | Package jsonutil provides a function for decoding JSON into a GraphQL query data structure.                     |
+| Path                                                                           | Synopsis                                                                                                        |
+|--------------------------------------------------------------------------------|-----------------------------------------------------------------------------------------------------------------|
+| [ident](https://pkg.go.dev/github.com/llehouerou/gqlclient/ident)             | Package ident provides functions for parsing and converting identifier names between various naming convention. |
+| [pkg/jsonutil](https://pkg.go.dev/github.com/llehouerou/gqlclient/pkg/jsonutil) | Package jsonutil provides a function for decoding JSON into a GraphQL query data structure.                     |
+| [types](https://pkg.go.dev/github.com/llehouerou/gqlclient/types)             | Package types provides GraphQL type interfaces and constants.                                                   |
 
-References
-----------
-- https://github.com/shurcooL/graphql
-- https://github.com/apollographql/subscriptions-transport-ws/blob/master/PROTOCOL.md
-- https://github.com/nhooyr/websocket
+## References
 
+- Original project: [github.com/shurcooL/graphql](https://github.com/shurcooL/graphql)
+- Upstream fork: [github.com/hasura/go-graphql-client](https://github.com/hasura/go-graphql-client)
+- GraphQL specification: [https://graphql.org/](https://graphql.org/)
 
-License
--------
+## License
 
--	[MIT License](LICENSE)
+[MIT License](LICENSE) - See LICENSE file for full text
+
+Original work Copyright (c) 2017 Dmitri Shuralyov
+Modified work Copyright (c) 2020 Hasura
+Modified work Copyright (c) 2025 Laurent Le Houerou
