@@ -1,8 +1,6 @@
 gqlclient
 =========
 
-[![Unit tests](https://github.com/llehouerou/gqlclient/actions/workflows/test.yml/badge.svg)](https://github.com/llehouerou/gqlclient/actions/workflows/test.yml)
-
 ## About This Project
 
 This project is a fork of [`github.com/hasura/go-graphql-client`](https://github.com/hasura/go-graphql-client), which itself was originally forked from [`github.com/shurcooL/graphql`](https://github.com/shurcooL/graphql).
