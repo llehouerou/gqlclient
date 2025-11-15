@@ -11,9 +11,9 @@ import (
 	"reflect"
 	"strings"
 
-	"github.com/llehouerou/go-graphql-client/internal/reflectutil"
-	"github.com/llehouerou/go-graphql-client/internal/tagparser"
-	"github.com/llehouerou/go-graphql-client/types"
+	"github.com/llehouerou/gqlclient/internal/reflectutil"
+	"github.com/llehouerou/gqlclient/internal/tagparser"
+	"github.com/llehouerou/gqlclient/types"
 )
 
 const (

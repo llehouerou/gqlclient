@@ -12,7 +12,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/llehouerou/go-graphql-client"
+	"github.com/llehouerou/gqlclient"
 )
 
 func TestClient_Query_partialDataWithErrorResponse(t *testing.T) {

@@ -7,9 +7,9 @@ import (
 	"io"
 	"reflect"
 
-	"github.com/llehouerou/go-graphql-client/ident"
-	"github.com/llehouerou/go-graphql-client/internal/reflectutil"
-	"github.com/llehouerou/go-graphql-client/types"
+	"github.com/llehouerou/gqlclient/ident"
+	"github.com/llehouerou/gqlclient/internal/reflectutil"
+	"github.com/llehouerou/gqlclient/types"
 )
 
 // query uses writeQuery to recursively construct

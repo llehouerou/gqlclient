@@ -9,7 +9,7 @@ import (
 
 	"github.com/google/uuid"
 
-	"github.com/llehouerou/go-graphql-client/types"
+	"github.com/llehouerou/gqlclient/types"
 )
 
 type cachedDirective struct {

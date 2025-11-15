@@ -3,7 +3,7 @@ package reflectutil
 import (
 	"reflect"
 
-	"github.com/llehouerou/go-graphql-client/types"
+	"github.com/llehouerou/gqlclient/types"
 )
 
 const (

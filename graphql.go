@@ -10,7 +10,7 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/llehouerou/go-graphql-client/pkg/jsonutil"
+	"github.com/llehouerou/gqlclient/pkg/jsonutil"
 )
 
 // This function allows you to tweak the HTTP request. It might be useful to set authentication

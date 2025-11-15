@@ -7,7 +7,7 @@ import (
 	"reflect"
 	"sort"
 
-	"github.com/llehouerou/go-graphql-client/internal/reflectutil"
+	"github.com/llehouerou/gqlclient/internal/reflectutil"
 )
 
 // argumentFieldInfo holds information about a struct field used for GraphQL query arguments.
