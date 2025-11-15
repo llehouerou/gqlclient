@@ -1,4 +1,4 @@
-package jsonutil
+package decode
 
 import (
 	"bytes"

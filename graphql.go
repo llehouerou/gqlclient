@@ -10,7 +10,7 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/llehouerou/gqlclient/pkg/jsonutil"
+	"github.com/llehouerou/gqlclient/internal/decode"
 )
 
 // This function allows you to tweak the HTTP request. It might be useful to set authentication
@@ -454,7 +454,7 @@ func (c *Client) processResponse(
 	errs Errors,
 ) error {
 	if len(data) > 0 {
-		err := jsonutil.UnmarshalGraphQL(data, v)
+		err := decode.UnmarshalGraphQL(data, v)
 		if err != nil {
 			we := c.DecorateError(
 				newError(ErrGraphQLDecode, err),
@@ -739,7 +739,7 @@ func (e Error) withResponse(res *http.Response, bodyReader io.Reader) Error {
 // in "encoding/json".Decoder.
 // This function is re-exported from the internal package
 func UnmarshalGraphQL(data []byte, v any) error {
-	return jsonutil.UnmarshalGraphQL(data, v)
+	return decode.UnmarshalGraphQL(data, v)
 }
 
 type operationType uint8

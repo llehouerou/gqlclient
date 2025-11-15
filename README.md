@@ -626,7 +626,6 @@ func UnmarshalGraphQL(data []byte, v interface{}) error
 | Path                                                                           | Synopsis                                                                                                        |
 |--------------------------------------------------------------------------------|-----------------------------------------------------------------------------------------------------------------|
 | [ident](https://pkg.go.dev/github.com/llehouerou/gqlclient/ident)             | Package ident provides functions for parsing and converting identifier names between various naming convention. |
-| [pkg/jsonutil](https://pkg.go.dev/github.com/llehouerou/gqlclient/pkg/jsonutil) | Package jsonutil provides a function for decoding JSON into a GraphQL query data structure.                     |
 | [types](https://pkg.go.dev/github.com/llehouerou/gqlclient/types)             | Package types provides GraphQL type interfaces and constants.                                                   |
 
 ## References

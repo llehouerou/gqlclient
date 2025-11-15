@@ -1,4 +1,4 @@
-package jsonutil_test
+package decode_test
 
 import (
 	"encoding/json"
@@ -6,7 +6,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/llehouerou/gqlclient/pkg/jsonutil"
+	"github.com/llehouerou/gqlclient/internal/decode"
 )
 
 func TestUnmarshalGraphQL(t *testing.T) {
@@ -25,7 +25,7 @@ func TestUnmarshalGraphQL(t *testing.T) {
 		}
 	}
 	var got query
-	err := jsonutil.UnmarshalGraphQL([]byte(`{
+	err := decode.UnmarshalGraphQL([]byte(`{
 		"me": {
 			"name": "Luke Skywalker",
 			"height": 1.72
@@ -47,7 +47,7 @@ func TestUnmarshalGraphQL_graphqlTag(t *testing.T) {
 		Foo string `graphql:"baz"`
 	}
 	var got query
-	err := jsonutil.UnmarshalGraphQL([]byte(`{
+	err := decode.UnmarshalGraphQL([]byte(`{
 		"baz": "bar"
 	}`), &got)
 	if err != nil {
@@ -66,7 +66,7 @@ func TestUnmarshalGraphQL_jsonTag(t *testing.T) {
 		Foo string `json:"baz"`
 	}
 	var got query
-	err := jsonutil.UnmarshalGraphQL([]byte(`{
+	err := decode.UnmarshalGraphQL([]byte(`{
 		"foo": "bar"
 	}`), &got)
 	if err != nil {
@@ -86,7 +86,7 @@ func TestUnmarshalGraphQL_jsonRawTag(t *testing.T) {
 		Another string
 	}
 	var got query
-	err := jsonutil.UnmarshalGraphQL([]byte(`{
+	err := decode.UnmarshalGraphQL([]byte(`{
 		"Data": { "foo":"bar" },
 		"Another" : "stuff"
         }`), &got)
@@ -111,7 +111,7 @@ func TestUnmarshalGraphQL_fieldAsScalar(t *testing.T) {
 		Tags    map[string]int `scalar:"true"`
 	}
 	var got query
-	err := jsonutil.UnmarshalGraphQL([]byte(`{
+	err := decode.UnmarshalGraphQL([]byte(`{
                 "Data" : {"ValA":1,"ValB":"foo"},
                 "DataPtr" : {"ValC":3,"ValD":false},
 		"Another" : "stuff",
@@ -144,7 +144,7 @@ func TestUnmarshalGraphQL_orderedMap(t *testing.T) {
 	got := query{
 		{"foo", ""},
 	}
-	err := jsonutil.UnmarshalGraphQL([]byte(`{
+	err := decode.UnmarshalGraphQL([]byte(`{
 		"foo": "bar"
 	}`), &got)
 	if err != nil {
@@ -173,7 +173,7 @@ func TestUnmarshalGraphQL_orderedMapWithPointers(t *testing.T) {
 		{"game1:game(id:\"2\")", game2},
 	}
 
-	err := jsonutil.UnmarshalGraphQL([]byte(`{
+	err := decode.UnmarshalGraphQL([]byte(`{
 		"game0": {
 			"name": "Game One",
 			"id": "1"
@@ -210,7 +210,7 @@ func TestUnmarshalGraphQL_orderedMapAlias(t *testing.T) {
 		{"update0:update(name:$name0)", &Update{}},
 		{"update1:update(name:$name1)", &Update{}},
 	}
-	err := jsonutil.UnmarshalGraphQL([]byte(`{
+	err := decode.UnmarshalGraphQL([]byte(`{
       "update0": {
         "name": "grihabor"
       },
@@ -237,7 +237,7 @@ func TestUnmarshalGraphQL_array(t *testing.T) {
 		Baz []string
 	}
 	var got query
-	err := jsonutil.UnmarshalGraphQL([]byte(`{
+	err := decode.UnmarshalGraphQL([]byte(`{
 		"foo": [
 			"bar",
 			"baz"
@@ -262,7 +262,7 @@ func TestUnmarshalGraphQL_array(t *testing.T) {
 // (rather than appended to).
 func TestUnmarshalGraphQL_arrayReset(t *testing.T) {
 	var got = []string{"initial"}
-	err := jsonutil.UnmarshalGraphQL([]byte(`["bar", "baz"]`), &got)
+	err := decode.UnmarshalGraphQL([]byte(`["bar", "baz"]`), &got)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -279,7 +279,7 @@ func TestUnmarshalGraphQL_objectArray(t *testing.T) {
 		}
 	}
 	var got query
-	err := jsonutil.UnmarshalGraphQL([]byte(`{
+	err := decode.UnmarshalGraphQL([]byte(`{
 		"foo": [
 			{"name": "bar"},
 			{"name": "baz"}
@@ -308,7 +308,7 @@ func TestUnmarshalGraphQL_orderedMapArray(t *testing.T) {
 			{{"name", ""}},
 		},
 	}
-	err := jsonutil.UnmarshalGraphQL([]byte(`{
+	err := decode.UnmarshalGraphQL([]byte(`{
 		"foo": [
 			{"name": "bar"},
 			{"name": "baz"}
@@ -337,7 +337,7 @@ func TestUnmarshalGraphQL_pointer(t *testing.T) {
 	}
 	var got query
 	got.Bar = &s // Test that got.Bar gets set to nil.
-	err := jsonutil.UnmarshalGraphQL([]byte(`{
+	err := decode.UnmarshalGraphQL([]byte(`{
 		"foo": "foo",
 		"bar": null
 	}`), &got)
@@ -362,7 +362,7 @@ func TestUnmarshalGraphQL_objectPointerArray(t *testing.T) {
 		}
 	}
 	var got query
-	err := jsonutil.UnmarshalGraphQL([]byte(`{
+	err := decode.UnmarshalGraphQL([]byte(`{
 		"foo": [
 			{"name": "bar"},
 			null,
@@ -393,7 +393,7 @@ func TestUnmarshalGraphQL_orderedMapNullInArray(t *testing.T) {
 			{{"name", ""}},
 		},
 	}
-	err := jsonutil.UnmarshalGraphQL([]byte(`{
+	err := decode.UnmarshalGraphQL([]byte(`{
 		"foo": [
 			{"name": "bar"},
 			null,
@@ -427,7 +427,7 @@ func TestUnmarshalGraphQL_pointerWithInlineFragment(t *testing.T) {
 		Editor *actor
 	}
 	var got query
-	err := jsonutil.UnmarshalGraphQL([]byte(`{
+	err := decode.UnmarshalGraphQL([]byte(`{
 		"author": {
 			"databaseId": 1,
 			"login": "test1"
@@ -459,7 +459,7 @@ func TestUnmarshalGraphQL_unexportedField(t *testing.T) {
 	type query struct {
 		foo *string //nolint:unused // Testing unexported field handling
 	}
-	err := jsonutil.UnmarshalGraphQL([]byte(`{"foo": "bar"}`), new(query))
+	err := decode.UnmarshalGraphQL([]byte(`{"foo": "bar"}`), new(query))
 	if err == nil {
 		t.Fatal("got error: nil, want: non-nil")
 	}
@@ -472,7 +472,7 @@ func TestUnmarshalGraphQL_multipleValues(t *testing.T) {
 	type query struct {
 		Foo *string
 	}
-	err := jsonutil.UnmarshalGraphQL(
+	err := decode.UnmarshalGraphQL(
 		[]byte(`{"foo": "bar"}{"foo": "baz"}`),
 		new(query),
 	)
@@ -487,7 +487,7 @@ func TestUnmarshalGraphQL_multipleValues(t *testing.T) {
 func TestUnmarshalGraphQL_multipleValuesInOrderedMap(t *testing.T) {
 	type query [][2]any
 	q := query{{"foo", ""}}
-	err := jsonutil.UnmarshalGraphQL([]byte(`{"foo": "bar"}{"foo": "baz"}`), &q)
+	err := decode.UnmarshalGraphQL([]byte(`{"foo": "bar"}{"foo": "baz"}`), &q)
 	if err == nil {
 		t.Fatal("got error: nil, want: non-nil")
 	}
@@ -525,7 +525,7 @@ func TestUnmarshalGraphQL_union(t *testing.T) {
 		ReopenedEvent reopenedEvent `graphql:"... on ReopenedEvent"`
 	}
 	var got issueTimelineItem
-	err := jsonutil.UnmarshalGraphQL([]byte(`{
+	err := decode.UnmarshalGraphQL([]byte(`{
 		"__typename": "ClosedEvent",
 		"createdAt": "2017-06-29T04:12:01Z",
 		"actor": {
@@ -580,7 +580,7 @@ func TestUnmarshalGraphQL_orderedMapUnion(t *testing.T) {
 		{"... on ClosedEvent", closedEvent},
 		{"... on ReopenedEvent", reopenedEvent},
 	}
-	err := jsonutil.UnmarshalGraphQL([]byte(`{
+	err := decode.UnmarshalGraphQL([]byte(`{
 		"__typename": "ClosedEvent",
 		"createdAt": "2017-06-29T04:12:01Z",
 		"actor": {
@@ -639,7 +639,7 @@ func TestUnmarshalGraphQL_arrayInsideInlineFragment(t *testing.T) {
 		} `graphql:"search(type: ISSUE, first: 1, query: \"type:pr repo:owner/name\")"`
 	}
 	var got query
-	err := jsonutil.UnmarshalGraphQL([]byte(`{
+	err := decode.UnmarshalGraphQL([]byte(`{
 		"search": {
 			"nodes": [
 				{
@@ -726,7 +726,7 @@ func TestUnmarshalGraphQL_unionWithConflictingFieldTypes(t *testing.T) {
 	}
 
 	var got authorizationRequest
-	err := jsonutil.UnmarshalGraphQL([]byte(`{
+	err := decode.UnmarshalGraphQL([]byte(`{
 		"__typename": "SolanaTokenTransferAuthorizationRequest",
 		"nonce": "1234567890",
 		"assetId": "0x123abc"
@@ -773,7 +773,7 @@ func TestUnmarshalGraphQL_unionWithoutTypename(t *testing.T) {
 	}
 
 	var got unionType
-	err := jsonutil.UnmarshalGraphQL([]byte(`{
+	err := decode.UnmarshalGraphQL([]byte(`{
 		"fieldA": "value_a",
 		"fieldB": 42
 	}`), &got)
@@ -825,7 +825,7 @@ func TestUnmarshalGraphQL_interfaceFragment(t *testing.T) {
 
 	// Test with Club type
 	var gotClub team
-	err := jsonutil.UnmarshalGraphQL([]byte(`{
+	err := decode.UnmarshalGraphQL([]byte(`{
 		"__typename": "Club",
 		"slug": "barcelona"
 	}`), &gotClub)
@@ -848,7 +848,7 @@ func TestUnmarshalGraphQL_interfaceFragment(t *testing.T) {
 
 	// Test with NationalTeam type
 	var gotNationalTeam team
-	err = jsonutil.UnmarshalGraphQL([]byte(`{
+	err = decode.UnmarshalGraphQL([]byte(`{
 		"__typename": "NationalTeam",
 		"slug": "france"
 	}`), &gotNationalTeam)
@@ -890,7 +890,7 @@ func TestUnmarshalGraphQL_basicWrapper(t *testing.T) {
 		Data Wrapper[string]
 	}
 	var got query
-	err := jsonutil.UnmarshalGraphQL([]byte(`{
+	err := decode.UnmarshalGraphQL([]byte(`{
 		"data": "hello world"
 	}`), &got)
 	if err != nil {
@@ -914,7 +914,7 @@ func TestUnmarshalGraphQL_wrapperWithStruct(t *testing.T) {
 		User Wrapper[Person]
 	}
 	var got query
-	err := jsonutil.UnmarshalGraphQL([]byte(`{
+	err := decode.UnmarshalGraphQL([]byte(`{
 		"user": {
 			"name": "Alice",
 			"age": 30
@@ -942,7 +942,7 @@ func TestUnmarshalGraphQL_wrapperInSlice(t *testing.T) {
 		Items []Item
 	}
 	var got query
-	err := jsonutil.UnmarshalGraphQL([]byte(`{
+	err := decode.UnmarshalGraphQL([]byte(`{
 		"items": [
 			{"data": "first"},
 			{"data": "second"},
@@ -978,7 +978,7 @@ func TestUnmarshalGraphQL_nestedWrappers(t *testing.T) {
 		Data Wrapper[Outer]
 	}
 	var got query
-	err := jsonutil.UnmarshalGraphQL([]byte(`{
+	err := decode.UnmarshalGraphQL([]byte(`{
 		"data": {"inner": {"val": 42}}
 	}`), &got)
 	if err != nil {
@@ -1000,7 +1000,7 @@ func TestUnmarshalGraphQL_wrapperWithPointer(t *testing.T) {
 		Data Wrapper[*string]
 	}
 	var got query
-	err := jsonutil.UnmarshalGraphQL([]byte(`{
+	err := decode.UnmarshalGraphQL([]byte(`{
 		"data": "pointer value"
 	}`), &got)
 	if err != nil {
@@ -1021,7 +1021,7 @@ func TestUnmarshalGraphQL_wrapperNull(t *testing.T) {
 		Data Wrapper[*string]
 	}
 	var got query
-	err := jsonutil.UnmarshalGraphQL([]byte(`{
+	err := decode.UnmarshalGraphQL([]byte(`{
 		"data": null
 	}`), &got)
 	if err != nil {
@@ -1041,7 +1041,7 @@ func TestUnmarshalGraphQL_wrapperEmpty(t *testing.T) {
 		Data Wrapper[string]
 	}
 	var got query
-	err := jsonutil.UnmarshalGraphQL([]byte(`{
+	err := decode.UnmarshalGraphQL([]byte(`{
 		"data": ""
 	}`), &got)
 	if err != nil {
@@ -1063,7 +1063,7 @@ func TestUnmarshalGraphQL_wrapperWithPrimitives(t *testing.T) {
 		StrVal  Wrapper[string]
 	}
 	var got query
-	err := jsonutil.UnmarshalGraphQL([]byte(`{
+	err := decode.UnmarshalGraphQL([]byte(`{
 		"intVal": 42,
 		"boolVal": true,
 		"strVal": "test"
@@ -1093,7 +1093,7 @@ func TestUnmarshalGraphQL_nilPointerToWrapper(t *testing.T) {
 	}
 	var got query
 	// Test that we can unmarshal without panic when interface contains nil
-	err := jsonutil.UnmarshalGraphQL([]byte(`{
+	err := decode.UnmarshalGraphQL([]byte(`{
 		"data": null
 	}`), &got)
 	if err != nil {
@@ -1111,7 +1111,7 @@ func TestUnmarshalGraphQL_nilPointerToWrapper(t *testing.T) {
 		Data **Wrapper[string]
 	}
 	var got2 query2
-	err = jsonutil.UnmarshalGraphQL([]byte(`{
+	err = decode.UnmarshalGraphQL([]byte(`{
 		"data": null
 	}`), &got2)
 	if err != nil {
@@ -1128,7 +1128,7 @@ func TestUnmarshalGraphQL_wrapperContainingSlice(t *testing.T) {
 		Items Wrapper[[]string]
 	}
 	var got query
-	err := jsonutil.UnmarshalGraphQL([]byte(`{
+	err := decode.UnmarshalGraphQL([]byte(`{
 		"items": ["first", "second", "third"]
 	}`), &got)
 	if err != nil {
@@ -1155,7 +1155,7 @@ func TestUnmarshalGraphQL_sliceOfWrappers(t *testing.T) {
 	got := query{
 		Items: []Wrapper[string]{{}}, // Template for array unmarshaling
 	}
-	err := jsonutil.UnmarshalGraphQL([]byte(`{
+	err := decode.UnmarshalGraphQL([]byte(`{
 		"items": [
 			{"value": "first"},
 			{"value": "second"},
@@ -1188,7 +1188,7 @@ func TestUnmarshalGraphQL_wrapperContainingComplexSlice(t *testing.T) {
 		Users Wrapper[[]Person]
 	}
 	var got query
-	err := jsonutil.UnmarshalGraphQL([]byte(`{
+	err := decode.UnmarshalGraphQL([]byte(`{
 		"users": [
 			{"name": "Alice", "age": 30},
 			{"name": "Bob", "age": 25}
@@ -1225,7 +1225,7 @@ func TestUnmarshalGraphQL_arrayWithInterfaceField(t *testing.T) {
 	got := query{
 		Items: []Item{{}}, // Template for array unmarshaling
 	}
-	err := jsonutil.UnmarshalGraphQL([]byte(`{
+	err := decode.UnmarshalGraphQL([]byte(`{
 		"items": [
 			{"name": "first", "data": "string value"},
 			{"name": "second", "data": 42},
@@ -1259,7 +1259,7 @@ func TestUnmarshalGraphQL_templateSliceError(t *testing.T) {
 		Items: []string{"template1", "template2"},
 	}
 
-	err := jsonutil.UnmarshalGraphQL([]byte(`{
+	err := decode.UnmarshalGraphQL([]byte(`{
 		"items": ["a", "b", "c"]
 	}`), &got)
 
@@ -1282,7 +1282,7 @@ func TestUnmarshalGraphQL_pointerToSlice(t *testing.T) {
 	t.Run("nil pointer to slice", func(t *testing.T) {
 		var got query
 		// Items is initially nil
-		err := jsonutil.UnmarshalGraphQL([]byte(`{
+		err := decode.UnmarshalGraphQL([]byte(`{
 			"items": ["a", "b", "c"]
 		}`), &got)
 
@@ -1301,7 +1301,7 @@ func TestUnmarshalGraphQL_pointerToSlice(t *testing.T) {
 		items := []string{"old"}
 		got := query{Items: &items}
 
-		err := jsonutil.UnmarshalGraphQL([]byte(`{
+		err := decode.UnmarshalGraphQL([]byte(`{
 			"items": ["new1", "new2"]
 		}`), &got)
 
@@ -1320,7 +1320,7 @@ func TestUnmarshalGraphQL_pointerToSlice(t *testing.T) {
 		items := []string{"old"}
 		got := query{Items: &items}
 
-		err := jsonutil.UnmarshalGraphQL([]byte(`{
+		err := decode.UnmarshalGraphQL([]byte(`{
 			"items": null
 		}`), &got)
 
@@ -1349,7 +1349,7 @@ func TestUnmarshalGraphQL_mapTemplateError(t *testing.T) {
 		},
 	}
 
-	err := jsonutil.UnmarshalGraphQL([]byte(`{
+	err := decode.UnmarshalGraphQL([]byte(`{
 		"items": [
 			{"name": "item1"},
 			{"name": "item2"}
@@ -1388,7 +1388,7 @@ func TestUnmarshalGraphQL_fragmentTypeEdgeCase(t *testing.T) {
 	}
 
 	var got query
-	err := jsonutil.UnmarshalGraphQL([]byte(`{
+	err := decode.UnmarshalGraphQL([]byte(`{
 		"user": {
 			"login": "test",
 			"node": {
@@ -1430,7 +1430,7 @@ func TestUnmarshalGraphQL_extractFragmentTypenameInvalid(t *testing.T) {
 	}
 
 	var got query
-	err := jsonutil.UnmarshalGraphQL([]byte(`{
+	err := decode.UnmarshalGraphQL([]byte(`{
 		"user": {
 			"login": "test"
 		}
@@ -1463,7 +1463,7 @@ func TestUnmarshalGraphQL_fragmentWithNonMatchingTypename(t *testing.T) {
 	var got query
 	// __typename is "Admin" which doesn't match User or Bot fragments
 	// Only __typename field is present (no fragment-specific fields)
-	err := jsonutil.UnmarshalGraphQL([]byte(`{
+	err := decode.UnmarshalGraphQL([]byte(`{
 		"node": {
 			"__typename": "Admin"
 		}
@@ -1506,7 +1506,7 @@ func TestUnmarshalGraphQL_nestedFragmentsWithTypename(t *testing.T) {
 	}
 
 	var got query
-	err := jsonutil.UnmarshalGraphQL([]byte(`{
+	err := decode.UnmarshalGraphQL([]byte(`{
 		"repository": {
 			"issue": {
 				"author": {
@@ -1554,7 +1554,7 @@ func TestUnmarshalGraphQL_orderedMapWithMultipleFragments(t *testing.T) {
 		},
 	}
 
-	err := jsonutil.UnmarshalGraphQL([]byte(`{
+	err := decode.UnmarshalGraphQL([]byte(`{
 		"users": {
 			"user1": {"name": "alice", "id": "1"},
 			"user2": {"name": "bob", "id": "2"}
@@ -1607,7 +1607,7 @@ func TestUnmarshalGraphQL_recursiveStructWithFragments(t *testing.T) {
 	}
 
 	var got query
-	err := jsonutil.UnmarshalGraphQL([]byte(`{
+	err := decode.UnmarshalGraphQL([]byte(`{
 		"node": {
 			"id": "1",
 			"parent": {

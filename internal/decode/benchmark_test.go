@@ -1,4 +1,4 @@
-package jsonutil_test
+package decode_test
 
 import (
 	"encoding/json"
@@ -8,7 +8,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/llehouerou/gqlclient/pkg/jsonutil"
+	"github.com/llehouerou/gqlclient/internal/decode"
 )
 
 func TestUnmarshalGraphQL_benchmark(t *testing.T) {
@@ -27,7 +27,7 @@ func TestUnmarshalGraphQL_benchmark(t *testing.T) {
 		}
 	}
 	var got query
-	err := jsonutil.UnmarshalGraphQL([]byte(`{
+	err := decode.UnmarshalGraphQL([]byte(`{
 		"viewer": {
 			"login": "shurcooL-test",
 			"createdAt": "2017-06-29T04:12:01Z"
@@ -54,7 +54,7 @@ func BenchmarkUnmarshalGraphQL(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		now := time.Now().UTC()
 		var got query
-		err := jsonutil.UnmarshalGraphQL([]byte(`{
+		err := decode.UnmarshalGraphQL([]byte(`{
 			"viewer": {
 				"login": "shurcooL-test",
 				"createdAt": "`+now.Format(time.RFC3339Nano)+`"

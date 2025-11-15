@@ -45,7 +45,7 @@ go test ./...
 
 # Run tests in a specific package
 go test .
-go test ./pkg/jsonutil
+go test ./internal/decode
 go test ./ident
 
 # Run a single test
@@ -103,7 +103,7 @@ go mod tidy
 - Handles inline fragments with `... on TypeName` syntax
 - Supports operation names and directives via `Option` interface
 
-**3. JSON Unmarshaling (`pkg/jsonutil/graphql.go`)**: Custom JSON decoder
+**3. JSON Unmarshaling (`internal/decode/graphql.go`)**: Custom JSON decoder
 - `UnmarshalGraphQL()` decodes GraphQL responses into Go structs
 - Handles GraphQL-specific patterns: fragments, embedded structs, ordered maps
 - Uses `__typename` discrimination for union/interface type resolution
@@ -136,7 +136,7 @@ The library handles GraphQL unions and interfaces using inline fragments with `_
 - During unmarshaling, captures `__typename` from response
 - Filters inline fragments to populate only the matching type
 - Supports both struct fields and ordered map keys as fragments
-- See `pkg/jsonutil/graphql.go` for fragment filtering logic
+- See `internal/decode/graphql.go` for fragment filtering logic
 
 ### Ordered Maps
 
