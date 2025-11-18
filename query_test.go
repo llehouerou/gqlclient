@@ -670,8 +670,8 @@ func TestQueryArguments(t *testing.T) {
 		want string
 	}{
 		{
-			in:   map[string]any{"a": Int(123), "b": NewBoolean(true)},
-			want: "$a:Int!$b:Boolean",
+			in:   map[string]any{"a": int32(123), "b": true},
+			want: "$a:Int!$b:Boolean!",
 		},
 		{
 			in: map[string]any{
@@ -680,19 +680,22 @@ func TestQueryArguments(t *testing.T) {
 				"c": i16Val,
 				"d": i32Val,
 				"e": i64Val,
-				"f": Int(123),
+				"f": int32(123),
 			},
 			want: "$a:Int!$b:Int!$c:Int!$d:Int!$e:Int!$f:Int!",
 		},
 		{
-			in: map[string]any{
-				"a": &iVal,
-				"b": &i8Val,
-				"c": &i16Val,
-				"d": &i32Val,
-				"e": &i64Val,
-				"f": NewInt(123),
-			},
+			in: func() map[string]any {
+				val := int32(123)
+				return map[string]any{
+					"a": &iVal,
+					"b": &i8Val,
+					"c": &i16Val,
+					"d": &i32Val,
+					"e": &i64Val,
+					"f": &val,
+				}
+			}(),
 			want: "$a:Int$b:Int$c:Int$d:Int$e:Int$f:Int",
 		},
 		{
@@ -716,22 +719,28 @@ func TestQueryArguments(t *testing.T) {
 			want: "$a:Int$b:Int$c:Int$d:Int$e:Int",
 		},
 		{
-			in:   map[string]any{"a": f32Val, "b": f64Val, "c": Float(1.2)},
+			in:   map[string]any{"a": f32Val, "b": f64Val, "c": float64(1.2)},
 			want: "$a:Float!$b:Float!$c:Float!",
 		},
 		{
-			in:   map[string]any{"a": &f32Val, "b": &f64Val, "c": NewFloat(1.2)},
+			in: func() map[string]any {
+				val := float64(1.2)
+				return map[string]any{"a": &f32Val, "b": &f64Val, "c": &val}
+			}(),
 			want: "$a:Float$b:Float$c:Float",
 		},
 		{
-			in: map[string]any{
-				"a": &bVal,
-				"b": bVal,
-				"c": true,
-				"d": false,
-				"e": Boolean(true),
-				"f": NewBoolean(true),
-			},
+			in: func() map[string]any {
+				val := true
+				return map[string]any{
+					"a": &bVal,
+					"b": bVal,
+					"c": true,
+					"d": false,
+					"e": true,
+					"f": &val,
+				}
+			}(),
 			want: "$a:Boolean$b:Boolean!$c:Boolean!$d:Boolean!$e:Boolean!$f:Boolean",
 		},
 		{
@@ -739,12 +748,15 @@ func TestQueryArguments(t *testing.T) {
 			want: "$a:ID$b:ID!",
 		},
 		{
-			in: map[string]any{
-				"a": sVal,
-				"b": &sVal,
-				"c": String("foo"),
-				"d": NewString("bar"),
-			},
+			in: func() map[string]any {
+				val := "bar"
+				return map[string]any{
+					"a": sVal,
+					"b": &sVal,
+					"c": "foo",
+					"d": &val,
+				}
+			}(),
 			want: "$a:String!$b:String$c:String!$d:String",
 		},
 		{
@@ -849,37 +861,44 @@ func TestQueryArguments_StructVariables(t *testing.T) {
 			want: "$active:Boolean$age:Int$name:String",
 		},
 		{
-			name: "struct with GraphQL scalar wrappers",
+			name: "struct with native Go types",
 			in: struct {
 				ID     ID      `json:"id"`
-				Name   String  `json:"name"`
-				Age    Int     `json:"age"`
-				Score  Float   `json:"score"`
-				Active Boolean `json:"active"`
+				Name   string  `json:"name"`
+				Age    int32   `json:"age"`
+				Score  float64 `json:"score"`
+				Active bool    `json:"active"`
 			}{
 				ID:     ID("abc123"),
-				Name:   String("John"),
-				Age:    Int(30),
-				Score:  Float(95.5),
-				Active: Boolean(true),
+				Name:   "John",
+				Age:    30,
+				Score:  95.5,
+				Active: true,
 			},
 			want: "$active:Boolean!$age:Int!$id:ID!$name:String!$score:Float!",
 		},
 		{
-			name: "struct with pointer scalar wrappers (nullable)",
-			in: struct {
-				ID     *ID      `json:"id"`
-				Name   *String  `json:"name"`
-				Age    *Int     `json:"age"`
-				Score  *Float   `json:"score"`
-				Active *Boolean `json:"active"`
-			}{
-				ID:     NewID("abc123"),
-				Name:   NewString("John"),
-				Age:    NewInt(30),
-				Score:  NewFloat(95.5),
-				Active: NewBoolean(true),
-			},
+			name: "struct with pointer native types (nullable)",
+			in: func() any {
+				idVal := ID("abc123")
+				nameVal := "John"
+				ageVal := int32(30)
+				scoreVal := 95.5
+				activeVal := true
+				return struct {
+					ID     *ID      `json:"id"`
+					Name   *string  `json:"name"`
+					Age    *int32   `json:"age"`
+					Score  *float64 `json:"score"`
+					Active *bool    `json:"active"`
+				}{
+					ID:     &idVal,
+					Name:   &nameVal,
+					Age:    &ageVal,
+					Score:  &scoreVal,
+					Active: &activeVal,
+				}
+			}(),
 			want: "$active:Boolean$age:Int$id:ID$name:String$score:Float",
 		},
 		{
@@ -1199,7 +1218,7 @@ func TestDynamicCustomType_GetGraphQLType(t *testing.T) {
 	type gqlGetRowsQuery struct {
 		GetRows struct {
 			Data []struct {
-				Id String
+				Id string
 			}
 		} `graphql:"getRows(batchId:$batchId)"`
 	}
