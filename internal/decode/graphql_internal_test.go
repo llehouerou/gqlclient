@@ -307,61 +307,67 @@ func TestSelectAndPushFields(t *testing.T) {
 		}
 	})
 
-	t.Run("filters non-matching fragments when matching fragment exists", func(t *testing.T) {
-		type testStruct struct {
-			Name string
-		}
-		target := testStruct{}
-		field := reflect.ValueOf(&target).Elem().Field(0)
+	t.Run(
+		"filters non-matching fragments when matching fragment exists",
+		func(t *testing.T) {
+			type testStruct struct {
+				Name string
+			}
+			target := testStruct{}
+			field := reflect.ValueOf(&target).Elem().Field(0)
 
-		d := &decoder{
-			vs: valueStack{
-				values:        []stack{{reflect.ValueOf(&target).Elem()}},
-				fragmentTypes: []string{""},
-			},
-		}
+			d := &decoder{
+				vs: valueStack{
+					values:        []stack{{reflect.ValueOf(&target).Elem()}},
+					fragmentTypes: []string{""},
+				},
+			}
 
-		// Field is from non-matching fragment, and a matching fragment also has this field
-		fields := []fieldInfo{
-			{field: field, isScalar: false, fragmentMatch: false},
-		}
+			// Field is from non-matching fragment, and a matching fragment also has this field
+			fields := []fieldInfo{
+				{field: field, isScalar: false, fragmentMatch: false},
+			}
 
-		d.selectAndPushFields(fields, true)
+			d.selectAndPushFields(fields, true)
 
-		// The field should be replaced with invalid value
-		pushedField := d.vs.values[0][1]
-		if pushedField.IsValid() {
-			t.Error("expected invalid field when filtering non-matching fragment")
-		}
-	})
+			// The field should be replaced with invalid value
+			pushedField := d.vs.values[0][1]
+			if pushedField.IsValid() {
+				t.Error("expected invalid field when filtering non-matching fragment")
+			}
+		},
+	)
 
-	t.Run("keeps non-matching fragment field when no matching fragment has it", func(t *testing.T) {
-		type testStruct struct {
-			Name string
-		}
-		target := testStruct{}
-		field := reflect.ValueOf(&target).Elem().Field(0)
+	t.Run(
+		"keeps non-matching fragment field when no matching fragment has it",
+		func(t *testing.T) {
+			type testStruct struct {
+				Name string
+			}
+			target := testStruct{}
+			field := reflect.ValueOf(&target).Elem().Field(0)
 
-		d := &decoder{
-			vs: valueStack{
-				values:        []stack{{reflect.ValueOf(&target).Elem()}},
-				fragmentTypes: []string{""},
-			},
-		}
+			d := &decoder{
+				vs: valueStack{
+					values:        []stack{{reflect.ValueOf(&target).Elem()}},
+					fragmentTypes: []string{""},
+				},
+			}
 
-		// Field is from non-matching fragment, but no matching fragment has this field
-		fields := []fieldInfo{
-			{field: field, isScalar: false, fragmentMatch: false},
-		}
+			// Field is from non-matching fragment, but no matching fragment has this field
+			fields := []fieldInfo{
+				{field: field, isScalar: false, fragmentMatch: false},
+			}
 
-		d.selectAndPushFields(fields, false)
+			d.selectAndPushFields(fields, false)
 
-		// The field should be kept
-		pushedField := d.vs.values[0][1]
-		if !pushedField.IsValid() {
-			t.Error("expected valid field when no matching fragment exists")
-		}
-	})
+			// The field should be kept
+			pushedField := d.vs.values[0][1]
+			if !pushedField.IsValid() {
+				t.Error("expected valid field when no matching fragment exists")
+			}
+		},
+	)
 
 	t.Run("handles multiple stacks", func(t *testing.T) {
 		type struct1 struct {
@@ -560,51 +566,57 @@ func TestReadNextToken(t *testing.T) {
 		}
 	})
 
-	t.Run("reads next token for regular field - object delimiter", func(t *testing.T) {
-		jsonData := `{`
-		dec := json.NewDecoder(bytes.NewReader([]byte(jsonData)))
-		dec.UseNumber()
+	t.Run(
+		"reads next token for regular field - object delimiter",
+		func(t *testing.T) {
+			jsonData := `{`
+			dec := json.NewDecoder(bytes.NewReader([]byte(jsonData)))
+			dec.UseNumber()
 
-		d := &decoder{
-			tokenizer: dec,
-		}
+			d := &decoder{
+				tokenizer: dec,
+			}
 
-		tok, err := d.readNextToken(false, false)
-		if err != nil {
-			t.Fatalf("unexpected error: %v", err)
-		}
+			tok, err := d.readNextToken(false, false)
+			if err != nil {
+				t.Fatalf("unexpected error: %v", err)
+			}
 
-		delim, ok := tok.(json.Delim)
-		if !ok {
-			t.Errorf("expected json.Delim, got %T", tok)
-		}
-		if delim != '{' {
-			t.Errorf("expected '{', got %v", delim)
-		}
-	})
+			delim, ok := tok.(json.Delim)
+			if !ok {
+				t.Errorf("expected json.Delim, got %T", tok)
+			}
+			if delim != '{' {
+				t.Errorf("expected '{', got %v", delim)
+			}
+		},
+	)
 
-	t.Run("reads next token for regular field - array delimiter", func(t *testing.T) {
-		jsonData := `[`
-		dec := json.NewDecoder(bytes.NewReader([]byte(jsonData)))
-		dec.UseNumber()
+	t.Run(
+		"reads next token for regular field - array delimiter",
+		func(t *testing.T) {
+			jsonData := `[`
+			dec := json.NewDecoder(bytes.NewReader([]byte(jsonData)))
+			dec.UseNumber()
 
-		d := &decoder{
-			tokenizer: dec,
-		}
+			d := &decoder{
+				tokenizer: dec,
+			}
 
-		tok, err := d.readNextToken(false, false)
-		if err != nil {
-			t.Fatalf("unexpected error: %v", err)
-		}
+			tok, err := d.readNextToken(false, false)
+			if err != nil {
+				t.Fatalf("unexpected error: %v", err)
+			}
 
-		delim, ok := tok.(json.Delim)
-		if !ok {
-			t.Errorf("expected json.Delim, got %T", tok)
-		}
-		if delim != '[' {
-			t.Errorf("expected '[', got %v", delim)
-		}
-	})
+			delim, ok := tok.(json.Delim)
+			if !ok {
+				t.Errorf("expected json.Delim, got %T", tok)
+			}
+			if delim != '[' {
+				t.Errorf("expected '[', got %v", delim)
+			}
+		},
+	)
 
 	t.Run("returns error on EOF for regular field", func(t *testing.T) {
 		jsonData := ``
@@ -624,18 +636,21 @@ func TestReadNextToken(t *testing.T) {
 		}
 	})
 
-	t.Run("returns error on decode failure for raw/scalar field", func(t *testing.T) {
-		jsonData := `{invalid`
-		dec := json.NewDecoder(bytes.NewReader([]byte(jsonData)))
-		dec.UseNumber()
+	t.Run(
+		"returns error on decode failure for raw/scalar field",
+		func(t *testing.T) {
+			jsonData := `{invalid`
+			dec := json.NewDecoder(bytes.NewReader([]byte(jsonData)))
+			dec.UseNumber()
 
-		d := &decoder{
-			tokenizer: dec,
-		}
+			d := &decoder{
+				tokenizer: dec,
+			}
 
-		_, err := d.readNextToken(true, false)
-		if err == nil {
-			t.Error("expected error on invalid JSON")
-		}
-	})
+			_, err := d.readNextToken(true, false)
+			if err == nil {
+				t.Error("expected error on invalid JSON")
+			}
+		},
+	)
 }

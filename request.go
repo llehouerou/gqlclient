@@ -55,7 +55,9 @@ func (c *Client) BuildRequest(
 
 // ExecuteRequest executes an HTTP request and handles gzip decompression.
 // It returns the HTTP response and a reader for the (possibly decompressed) body.
-func (c *Client) ExecuteRequest(req *http.Request) (*http.Response, io.Reader, error) {
+func (c *Client) ExecuteRequest(
+	req *http.Request,
+) (*http.Response, io.Reader, error) {
 	resp, err := c.httpClient.Do(req)
 	if err != nil {
 		return nil, nil, err
@@ -168,7 +170,8 @@ func (c *Client) request(
 	// Handle JSON decode errors
 	if len(gqlErrors) > 0 {
 		// Check if it's a decode error (has ErrJsonDecode code)
-		if code, ok := gqlErrors[0].Extensions["code"].(string); ok && code == ErrJsonDecode {
+		if code, ok := gqlErrors[0].Extensions["code"].(string); ok &&
+			code == ErrJsonDecode {
 			we := c.NewRequestError(
 				ErrJsonDecode,
 				fmt.Errorf("%s", gqlErrors[0].Message),

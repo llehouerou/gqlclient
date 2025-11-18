@@ -52,9 +52,10 @@ func IsNillable(kind reflect.Kind) bool {
 // Returns the concrete value, or an invalid reflect.Value if unwrapping fails.
 //
 // Example:
-//   var x **int
-//   v := reflect.ValueOf(x)
-//   concrete := UnwrapToConcreteValue(v) // returns the int value (if not nil)
+//
+//	var x **int
+//	v := reflect.ValueOf(x)
+//	concrete := UnwrapToConcreteValue(v) // returns the int value (if not nil)
 func UnwrapToConcreteValue(v reflect.Value) reflect.Value {
 	for v.IsValid() && (v.Kind() == reflect.Ptr || v.Kind() == reflect.Interface) {
 		if v.IsNil() {
@@ -87,11 +88,12 @@ func IsNilValue(v reflect.Value) bool {
 // if it's a pointer or not.
 //
 // Example:
-//   t := reflect.TypeOf((*int)(nil))  // *int
-//   v := NewZeroOrPointerValue(t)      // returns new(int)
 //
-//   t := reflect.TypeOf(0)             // int
-//   v := NewZeroOrPointerValue(t)      // returns zero int
+//	t := reflect.TypeOf((*int)(nil))  // *int
+//	v := NewZeroOrPointerValue(t)      // returns new(int)
+//
+//	t := reflect.TypeOf(0)             // int
+//	v := NewZeroOrPointerValue(t)      // returns zero int
 func NewZeroOrPointerValue(t reflect.Type) reflect.Value {
 	if t.Kind() == reflect.Ptr {
 		return reflect.New(t.Elem())

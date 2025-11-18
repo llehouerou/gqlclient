@@ -349,9 +349,9 @@ func TestIsNilValue(t *testing.T) {
 	var nilFunc func()
 
 	tests := []struct {
-		name string
+		name  string
 		value reflect.Value
-		want bool
+		want  bool
 	}{
 		// Nil values
 		{
@@ -525,7 +525,11 @@ func TestNewZeroOrPointerValue(t *testing.T) {
 					t.Error("expected non-nil pointer")
 				}
 				if v.Elem().Kind() != reflect.Int {
-					t.Errorf("pointer elem kind = %v, want %v", v.Elem().Kind(), reflect.Int)
+					t.Errorf(
+						"pointer elem kind = %v, want %v",
+						v.Elem().Kind(),
+						reflect.Int,
+					)
 				}
 			},
 		},

@@ -982,8 +982,8 @@ func TestQueryArguments_StructVariables(t *testing.T) {
 		{
 			name: "pointer to struct (should dereference)",
 			in: &struct {
-				Name   string `json:"name"`
-				Age    int    `json:"age"`
+				Name string `json:"name"`
+				Age  int    `json:"age"`
 			}{
 				Name: "John",
 				Age:  30,
@@ -1012,20 +1012,20 @@ func TestQueryArguments_StructVariables(t *testing.T) {
 		{
 			name: "struct with all numeric types",
 			in: struct {
-				I   int     `json:"i"`
-				I8  int8    `json:"i8"`
-				I16 int16   `json:"i16"`
-				I32 int32   `json:"i32"`
-				I64 int64   `json:"i64"`
-				UI  uint    `json:"ui"`
-				UI8 uint8   `json:"ui8"`
+				I    int     `json:"i"`
+				I8   int8    `json:"i8"`
+				I16  int16   `json:"i16"`
+				I32  int32   `json:"i32"`
+				I64  int64   `json:"i64"`
+				UI   uint    `json:"ui"`
+				UI8  uint8   `json:"ui8"`
 				UI16 uint16  `json:"ui16"`
 				UI32 uint32  `json:"ui32"`
 				UI64 uint64  `json:"ui64"`
-				F32 float32 `json:"f32"`
-				F64 float64 `json:"f64"`
+				F32  float32 `json:"f32"`
+				F64  float64 `json:"f64"`
 			}{
-				I:   iVal, I8: i8Val, I16: i16Val,
+				I: iVal, I8: i8Val, I16: i16Val,
 				I32: int32(70000), I64: int64(5000000000),
 				UI: uint(123), UI8: uint8(12), UI16: uint16(500),
 				UI32: uint32(70000), UI64: uint64(5000000000),
@@ -1822,7 +1822,7 @@ func TestWrapper_MultipleFields(t *testing.T) {
 		Container struct {
 			Wrapper1 Wrapper[Wrapped]  `graphql:"wrapper1"`
 			Wrapper2 Wrapper[Wrappeds] `graphql:"wrapper2"`
-			Normal   string             `graphql:"normal"`
+			Normal   string            `graphql:"normal"`
 		} `graphql:"container"`
 	}
 	q := Query{}
@@ -1860,8 +1860,8 @@ func TestWrapper_CustomGraphQLTag(t *testing.T) {
 func TestWrapper_SkipTag(t *testing.T) {
 	type Query struct {
 		Container struct {
-			SkipMe  Wrapper[Wrapped] `graphql:"-"`
-			KeepMe  Wrapper[Wrapped] `graphql:"keepMe"`
+			SkipMe Wrapper[Wrapped] `graphql:"-"`
+			KeepMe Wrapper[Wrapped] `graphql:"keepMe"`
 		} `graphql:"container"`
 	}
 	q := Query{}
@@ -1903,8 +1903,8 @@ func TestWrapper_ScalarTag(t *testing.T) {
 // TestWrapper_EmbeddedAnonymous documents Go method promotion with Wrapper types
 //
 // KEY INSIGHT: Anonymous Wrapper[T] fields promote BOTH methods to the parent:
-//   1. GetGraphQLType() → field name becomes "wrapper"
-//   2. GetGraphQLWrapped() → unwraps, skipping sibling fields
+//  1. GetGraphQLType() → field name becomes "wrapper"
+//  2. GetGraphQLWrapped() → unwraps, skipping sibling fields
 //
 // RECOMMENDATION: Don't use anonymous Wrapper[T] with sibling fields!
 func TestWrapper_EmbeddedAnonymous(t *testing.T) {
@@ -1915,8 +1915,8 @@ func TestWrapper_EmbeddedAnonymous(t *testing.T) {
 	t.Run("AnonymousEmbedWithOtherField", func(t *testing.T) {
 		type Query struct {
 			Container struct {
-				EmbeddedWrapper // anonymous: promotes Wrapper methods to Container
-				Other string `graphql:"other"`
+				EmbeddedWrapper        // anonymous: promotes Wrapper methods to Container
+				Other           string `graphql:"other"`
 			} `graphql:"container"`
 		}
 		q := Query{}
@@ -1974,7 +1974,7 @@ func TestWrapper_EmbeddedAnonymous(t *testing.T) {
 		type Query struct {
 			Container struct {
 				Embed EmbeddedWrapper // NAMED field - no method promotion!
-				Other string `graphql:"other"`
+				Other string          `graphql:"other"`
 			} `graphql:"container"`
 		}
 		q := Query{}

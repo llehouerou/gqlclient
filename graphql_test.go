@@ -310,7 +310,10 @@ func TestClient_Query_networkError(t *testing.T) {
 
 	// Check error message contains network error
 	if !strings.Contains(errs[0].Message, "network error") {
-		t.Errorf("expected error message to mention network error, got %q", errs[0].Message)
+		t.Errorf(
+			"expected error message to mention network error, got %q",
+			errs[0].Message,
+		)
 	}
 }
 
@@ -450,7 +453,7 @@ func TestClient_Exec_Query(t *testing.T) {
 		}
 	}
 
-	err := client.Exec(
+	err := client.ExecuteQuery(
 		context.Background(),
 		"{user{id,name}}",
 		&q,
@@ -488,7 +491,7 @@ func TestClient_Exec_QueryRaw(t *testing.T) {
 		}
 	}
 
-	rawBytes, err := client.ExecRaw(
+	rawBytes, err := client.ExecuteQueryRaw(
 		context.Background(),
 		"{user{id,name}}",
 		map[string]any{},
@@ -683,7 +686,7 @@ func TestClient_Query_multiLevelNesting(t *testing.T) {
 	mux := http.NewServeMux()
 	mux.HandleFunc("/graphql", func(w http.ResponseWriter, req *http.Request) {
 		body := mustRead(req.Body)
-		expected := `{"query":"{layer1{layer2{layer3{wrapper{value1,value2{type,id}}}}}}"}`+ "\n"
+		expected := `{"query":"{layer1{layer2{layer3{wrapper{value1,value2{type,id}}}}}}"}` + "\n"
 		if got := body; got != expected {
 			t.Errorf("got body: %v, want %v", got, expected)
 		}
@@ -725,7 +728,7 @@ func TestClient_Mutation_withWrapper(t *testing.T) {
 	mux.HandleFunc("/graphql", func(w http.ResponseWriter, req *http.Request) {
 		body := mustRead(req.Body)
 		// Note: Mutation with variables includes type definition
-		expected := `{"query":"mutation ($name:String!){createUser(name: $name){wrapper{value1,value2{type,id}}}}","variables":{"name":"Alice"}}`+ "\n"
+		expected := `{"query":"mutation ($name:String!){createUser(name: $name){wrapper{value1,value2{type,id}}}}","variables":{"name":"Alice"}}` + "\n"
 		if got := body; got != expected {
 			t.Errorf("got body: %v, want %v", got, expected)
 		}
@@ -866,29 +869,32 @@ func TestClient_Query_StructVariables(t *testing.T) {
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
 			mux := http.NewServeMux()
-			mux.HandleFunc("/graphql", func(w http.ResponseWriter, req *http.Request) {
-				body := mustRead(req.Body)
+			mux.HandleFunc(
+				"/graphql",
+				func(w http.ResponseWriter, req *http.Request) {
+					body := mustRead(req.Body)
 
-				// Parse the request to validate variables were properly serialized
-				var reqBody struct {
-					Query     string         `json:"query"`
-					Variables map[string]any `json:"variables,omitempty"`
-				}
-				if err := json.Unmarshal([]byte(body), &reqBody); err != nil {
-					t.Fatalf(
-						"failed to unmarshal request body: %v",
-						err,
-					)
-				}
+					// Parse the request to validate variables were properly serialized
+					var reqBody struct {
+						Query     string         `json:"query"`
+						Variables map[string]any `json:"variables,omitempty"`
+					}
+					if err := json.Unmarshal([]byte(body), &reqBody); err != nil {
+						t.Fatalf(
+							"failed to unmarshal request body: %v",
+							err,
+						)
+					}
 
-				// Validate variables if test specifies validation
-				if tc.validateVars != nil && len(reqBody.Variables) > 0 {
-					tc.validateVars(t, reqBody.Variables)
-				}
+					// Validate variables if test specifies validation
+					if tc.validateVars != nil && len(reqBody.Variables) > 0 {
+						tc.validateVars(t, reqBody.Variables)
+					}
 
-				w.Header().Set("Content-Type", "application/json")
-				mustWrite(w, tc.responseBody)
-			})
+					w.Header().Set("Content-Type", "application/json")
+					mustWrite(w, tc.responseBody)
+				},
+			)
 			client := graphql.NewClient(
 				"/graphql",
 				&http.Client{Transport: localRoundTripper{handler: mux}},
@@ -1136,7 +1142,8 @@ func TestClient_decorateError(t *testing.T) {
 		}
 
 		// The base error should still have the code
-		if code, ok := decorated.Extensions["code"].(string); !ok || code != graphql.ErrRequestError {
+		if code, ok := decorated.Extensions["code"].(string); !ok ||
+			code != graphql.ErrRequestError {
 			t.Error("expected code to be preserved")
 		}
 	})
@@ -1191,7 +1198,10 @@ func TestClient_decorateError(t *testing.T) {
 
 		// Check error message mentions the read error
 		if !strings.Contains(errs[0].Message, "read error") {
-			t.Errorf("expected error message to mention read error, got %q", errs[0].Message)
+			t.Errorf(
+				"expected error message to mention read error, got %q",
+				errs[0].Message,
+			)
 		}
 	})
 }
@@ -1211,7 +1221,9 @@ type failingBodyTransport struct {
 	failingReader io.Reader
 }
 
-func (t *failingBodyTransport) RoundTrip(req *http.Request) (*http.Response, error) {
+func (t *failingBodyTransport) RoundTrip(
+	req *http.Request,
+) (*http.Response, error) {
 	rec := httptest.NewRecorder()
 	t.handler.ServeHTTP(rec, req)
 	resp := rec.Result()
@@ -1239,7 +1251,8 @@ func TestClient_newRequestError(t *testing.T) {
 			t.Errorf("expected message 'json decode failed', got %q", err.Message)
 		}
 
-		if code, ok := err.Extensions["code"].(string); !ok || code != graphql.ErrJsonDecode {
+		if code, ok := err.Extensions["code"].(string); !ok ||
+			code != graphql.ErrJsonDecode {
 			t.Errorf("expected code %q, got %v", graphql.ErrJsonDecode, code)
 		}
 	})
@@ -1305,7 +1318,10 @@ func TestClient_buildRequest(t *testing.T) {
 		}
 
 		if req.URL.String() != "http://example.com/graphql" {
-			t.Errorf("expected URL http://example.com/graphql, got %s", req.URL.String())
+			t.Errorf(
+				"expected URL http://example.com/graphql, got %s",
+				req.URL.String(),
+			)
 		}
 
 		if contentType := req.Header.Get("Content-Type"); contentType != "application/json" {
@@ -1406,26 +1422,33 @@ func TestClient_buildRequest(t *testing.T) {
 		// The canceled context will cause the actual HTTP request to fail
 	})
 
-	t.Run("handles variables that cannot be marshaled to JSON", func(t *testing.T) {
-		client := graphql.NewClient("http://example.com/graphql", nil)
-		ctx := context.Background()
-		query := "{user{name}}"
+	t.Run(
+		"handles variables that cannot be marshaled to JSON",
+		func(t *testing.T) {
+			client := graphql.NewClient("http://example.com/graphql", nil)
+			ctx := context.Background()
+			query := "{user{name}}"
 
-		// Create variables with an unmarshalable type (channels can't be marshaled)
-		variables := map[string]any{
-			"channel": make(chan int),
-		}
+			// Create variables with an unmarshalable type (channels can't be marshaled)
+			variables := map[string]any{
+				"channel": make(chan int),
+			}
 
-		_, _, err := client.BuildRequest(ctx, query, variables)
-		if err == nil {
-			t.Fatal("expected error for unmarshalable variables, got nil")
-		}
+			_, _, err := client.BuildRequest(ctx, query, variables)
+			if err == nil {
+				t.Fatal("expected error for unmarshalable variables, got nil")
+			}
 
-		// Check error mentions JSON
-		if !strings.Contains(err.Error(), "json") && !strings.Contains(err.Error(), "marshal") {
-			t.Errorf("expected error to mention JSON or marshal, got %q", err.Error())
-		}
-	})
+			// Check error mentions JSON
+			if !strings.Contains(err.Error(), "json") &&
+				!strings.Contains(err.Error(), "marshal") {
+				t.Errorf(
+					"expected error to mention JSON or marshal, got %q",
+					err.Error(),
+				)
+			}
+		},
+	)
 }
 
 // TestClient_ImmutablePattern tests that With* methods follow the immutable
@@ -1473,7 +1496,9 @@ func TestClient_ImmutablePattern(t *testing.T) {
 			t.Fatalf("unexpected error: %v", err)
 		}
 		if req.Header.Get("X-Test") != "" {
-			t.Error("WithRequestModifier modified the original client (expected immutable)")
+			t.Error(
+				"WithRequestModifier modified the original client (expected immutable)",
+			)
 		}
 
 		// Captured result should have the modifier
@@ -1644,76 +1669,83 @@ func TestClient_ImmutablePattern(t *testing.T) {
 		}
 
 		if req.Header.Get("X-Modified") != "true" {
-			t.Error("request modifier didn't apply the header (WithDebug lost the modifier)")
+			t.Error(
+				"request modifier didn't apply the header (WithDebug lost the modifier)",
+			)
 		}
 	})
 
-	t.Run("WithRequestModifier then WithDebug preserves both fields", func(t *testing.T) {
-		modifierCalled := false
+	t.Run(
+		"WithRequestModifier then WithDebug preserves both fields",
+		func(t *testing.T) {
+			modifierCalled := false
 
-		// Chain: modifier first, then debug
-		_ = graphql.NewClient("http://example.com/graphql", nil).
-			WithRequestModifier(func(r *http.Request) {
-				modifierCalled = true
-				r.Header.Set("X-Chain-Test", "present")
-			}).
-			WithDebug(true)
+			// Chain: modifier first, then debug
+			_ = graphql.NewClient("http://example.com/graphql", nil).
+				WithRequestModifier(func(r *http.Request) {
+					modifierCalled = true
+					r.Header.Set("X-Chain-Test", "present")
+				}).
+				WithDebug(true)
 
-		// Test with a real server to verify both debug and modifier work
-		server := httptest.NewServer(
-			http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-				// Verify modifier was applied
-				if r.Header.Get("X-Chain-Test") != "present" {
-					w.WriteHeader(http.StatusBadRequest)
-					w.Write(
-						[]byte(`{"errors": [{"message": "modifier header missing"}]}`),
-					)
-					return
-				}
+			// Test with a real server to verify both debug and modifier work
+			server := httptest.NewServer(
+				http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+					// Verify modifier was applied
+					if r.Header.Get("X-Chain-Test") != "present" {
+						w.WriteHeader(http.StatusBadRequest)
+						w.Write(
+							[]byte(`{"errors": [{"message": "modifier header missing"}]}`),
+						)
+						return
+					}
 
-				w.Header().Set("Content-Type", "application/json")
-				w.WriteHeader(http.StatusOK)
-				w.Write([]byte(`{
+					w.Header().Set("Content-Type", "application/json")
+					w.WriteHeader(http.StatusOK)
+					w.Write([]byte(`{
 					"errors": [{
 						"message": "test error for debug"
 					}]
 				}`))
-			}),
-		)
-		defer server.Close()
+				}),
+			)
+			defer server.Close()
 
-		clientWithServer := graphql.NewClient(server.URL, nil).
-			WithRequestModifier(func(r *http.Request) {
-				modifierCalled = true
-				r.Header.Set("X-Chain-Test", "present")
-			}).
-			WithDebug(true)
+			clientWithServer := graphql.NewClient(server.URL, nil).
+				WithRequestModifier(func(r *http.Request) {
+					modifierCalled = true
+					r.Header.Set("X-Chain-Test", "present")
+				}).
+				WithDebug(true)
 
-		var result struct{}
-		err := clientWithServer.Query(context.Background(), &result, nil)
+			var result struct{}
+			err := clientWithServer.Query(context.Background(), &result, nil)
 
-		if !modifierCalled {
-			t.Error("request modifier was not called")
-		}
+			if !modifierCalled {
+				t.Error("request modifier was not called")
+			}
 
-		if err == nil {
-			t.Fatal("expected error, got nil")
-		}
+			if err == nil {
+				t.Fatal("expected error, got nil")
+			}
 
-		// Verify debug info is present
-		gqlErrs, ok := err.(graphql.Errors)
-		if !ok {
-			t.Fatalf("expected graphql.Errors, got %T", err)
-		}
+			// Verify debug info is present
+			gqlErrs, ok := err.(graphql.Errors)
+			if !ok {
+				t.Fatalf("expected graphql.Errors, got %T", err)
+			}
 
-		if len(gqlErrs) == 0 {
-			t.Fatal("expected at least one error")
-		}
+			if len(gqlErrs) == 0 {
+				t.Fatal("expected at least one error")
+			}
 
-		if gqlErrs[0].Extensions == nil {
-			t.Error("expected error extensions (debug info), got nil - debug mode not preserved")
-		}
-	})
+			if gqlErrs[0].Extensions == nil {
+				t.Error(
+					"expected error extensions (debug info), got nil - debug mode not preserved",
+				)
+			}
+		},
+	)
 }
 
 // TestClient_executeRequest tests the executeRequest method that executes
@@ -1731,7 +1763,11 @@ func TestClient_executeRequest(t *testing.T) {
 			&http.Client{Transport: localRoundTripper{handler: mux}},
 		)
 
-		req, err := http.NewRequest(http.MethodPost, "/graphql", strings.NewReader("{}"))
+		req, err := http.NewRequest(
+			http.MethodPost,
+			"/graphql",
+			strings.NewReader("{}"),
+		)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -1767,7 +1803,11 @@ func TestClient_executeRequest(t *testing.T) {
 			&http.Client{Transport: localRoundTripper{handler: mux}},
 		)
 
-		req, err := http.NewRequest(http.MethodPost, "/graphql", strings.NewReader("{}"))
+		req, err := http.NewRequest(
+			http.MethodPost,
+			"/graphql",
+			strings.NewReader("{}"),
+		)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -1798,7 +1838,11 @@ func TestClient_executeRequest(t *testing.T) {
 			&http.Client{Transport: localRoundTripper{handler: mux}},
 		)
 
-		req, err := http.NewRequest(http.MethodPost, "/graphql", strings.NewReader("{}"))
+		req, err := http.NewRequest(
+			http.MethodPost,
+			"/graphql",
+			strings.NewReader("{}"),
+		)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -1809,7 +1853,10 @@ func TestClient_executeRequest(t *testing.T) {
 		}
 
 		if resp.Header.Get("Content-Encoding") != "gzip" {
-			t.Errorf("expected Content-Encoding gzip, got %q", resp.Header.Get("Content-Encoding"))
+			t.Errorf(
+				"expected Content-Encoding gzip, got %q",
+				resp.Header.Get("Content-Encoding"),
+			)
 		}
 
 		body, err := io.ReadAll(reader)
@@ -1865,7 +1912,10 @@ func TestClient_executeRequest(t *testing.T) {
 
 		// Check error message contains gzip-related text
 		if !strings.Contains(errs[0].Message, "gzip") {
-			t.Errorf("expected error message to mention gzip, got %q", errs[0].Message)
+			t.Errorf(
+				"expected error message to mention gzip, got %q",
+				errs[0].Message,
+			)
 		}
 	})
 }
@@ -1920,7 +1970,10 @@ func TestClient_decodeResponse(t *testing.T) {
 		}
 
 		if rawData != nil {
-			t.Errorf("expected nil raw data with errors only, got %s", string(rawData))
+			t.Errorf(
+				"expected nil raw data with errors only, got %s",
+				string(rawData),
+			)
 		}
 	})
 
@@ -1975,7 +2028,8 @@ func TestClient_decodeResponse(t *testing.T) {
 			t.Fatalf("expected 1 error, got %d", len(errs))
 		}
 
-		if code, ok := errs[0].Extensions["code"].(string); !ok || code != graphql.ErrJsonDecode {
+		if code, ok := errs[0].Extensions["code"].(string); !ok ||
+			code != graphql.ErrJsonDecode {
 			t.Errorf("expected error code %q, got %v", graphql.ErrJsonDecode, code)
 		}
 	})
@@ -2319,7 +2373,11 @@ func TestError_GetInternalExtensions(t *testing.T) {
 			t.Fatal("expected non-nil request info")
 		}
 		if internal.Request.Body != reqBody {
-			t.Errorf("expected request body %q, got %q", reqBody, internal.Request.Body)
+			t.Errorf(
+				"expected request body %q, got %q",
+				reqBody,
+				internal.Request.Body,
+			)
 		}
 		if len(internal.Request.Headers) == 0 {
 			t.Error("expected non-empty request headers")

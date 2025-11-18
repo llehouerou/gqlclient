@@ -520,7 +520,9 @@ func TestGetGraphQLType_interfaceValue(t *testing.T) {
 	v := reflect.ValueOf(iface)
 	typeName, ok := GetGraphQLType(v, v.Type())
 	if !ok {
-		t.Fatal("GetGraphQLType should return true for interface containing CustomType")
+		t.Fatal(
+			"GetGraphQLType should return true for interface containing CustomType",
+		)
 	}
 
 	if typeName != "CustomScalar" {

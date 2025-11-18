@@ -64,7 +64,7 @@ func (c *Client) Query(
 	variables any,
 	options ...Option,
 ) error {
-	return c.do(ctx, queryOperation, q, variables, options...)
+	return c.executeAndUnmarshal(ctx, queryOperation, q, variables, options...)
 }
 
 // Mutate executes a single GraphQL mutation request,
@@ -79,7 +79,7 @@ func (c *Client) Mutate(
 	variables any,
 	options ...Option,
 ) error {
-	return c.do(ctx, mutationOperation, m, variables, options...)
+	return c.executeAndUnmarshal(ctx, mutationOperation, m, variables, options...)
 }
 
 // QueryRaw executes a single GraphQL query request,
@@ -95,7 +95,7 @@ func (c *Client) QueryRaw(
 	variables any,
 	options ...Option,
 ) ([]byte, error) {
-	return c.doRaw(ctx, queryOperation, q, variables, options...)
+	return c.executeForRawJSON(ctx, queryOperation, q, variables, options...)
 }
 
 // MutateRaw executes a single GraphQL mutation request,
@@ -111,12 +111,14 @@ func (c *Client) MutateRaw(
 	variables any,
 	options ...Option,
 ) ([]byte, error) {
-	return c.doRaw(ctx, mutationOperation, m, variables, options...)
+	return c.executeForRawJSON(ctx, mutationOperation, m, variables, options...)
 }
 
-// Exec executes a pre-built query and unmarshals the response into v. Unlike the Query method you have to specify in the query the
-// fields that you want to receive as they are not inferred from v. This method is useful if you need to build the query dynamically.
-func (c *Client) Exec(
+// ExecuteQuery executes a pre-built GraphQL query string and unmarshals the
+// response into v. Unlike Query, you must manually specify all fields in the
+// query string as they are not inferred from v. This is useful when you need
+// to build queries dynamically.
+func (c *Client) ExecuteQuery(
 	ctx context.Context,
 	query string,
 	v any,
@@ -127,9 +129,11 @@ func (c *Client) Exec(
 	return c.processResponse(v, data, resp, respBuf, errs)
 }
 
-// ExecRaw executes a pre-built query and returns the raw json message. Unlike the Query method you have to specify in the query the
-// fields that you want to receive as they are not inferred from the interface. This method is useful if you need to build the query dynamically.
-func (c *Client) ExecRaw(
+// ExecuteQueryRaw executes a pre-built GraphQL query string and returns the
+// raw JSON response without unmarshaling. Unlike Query, you must manually
+// specify all fields in the query string. This is useful when you need to
+// build queries dynamically or process the raw JSON response yourself.
+func (c *Client) ExecuteQueryRaw(
 	ctx context.Context,
 	query string,
 	variables map[string]any,
@@ -202,15 +206,16 @@ func UnmarshalGraphQL(data []byte, v any) error {
 	return decode.UnmarshalGraphQL(data, v)
 }
 
-// do executes a single GraphQL operation and unmarshal json.
-func (c *Client) do(
+// executeAndUnmarshal executes a single GraphQL operation and unmarshals the
+// response into v.
+func (c *Client) executeAndUnmarshal(
 	ctx context.Context,
 	op operationType,
 	v any,
 	variables any,
 	options ...Option,
 ) error {
-	data, resp, respBuf, errs := c.buildAndRequest(
+	data, resp, respBuf, errs := c.constructQueryAndExecute(
 		ctx,
 		op,
 		v,
@@ -219,23 +224,30 @@ func (c *Client) do(
 	return c.processResponse(v, data, resp, respBuf, errs)
 }
 
-// doRaw executes a single GraphQL operation and returns raw message.
-func (c *Client) doRaw(
+// executeForRawJSON executes a single GraphQL operation and returns the raw
+// JSON response without unmarshaling.
+func (c *Client) executeForRawJSON(
 	ctx context.Context,
 	op operationType,
 	v any,
 	variables any,
 	options ...Option,
 ) ([]byte, error) {
-	data, _, _, err := c.buildAndRequest(ctx, op, v, variables, options...)
+	data, _, _, err := c.constructQueryAndExecute(
+		ctx,
+		op,
+		v,
+		variables,
+		options...)
 	if len(err) > 0 {
 		return data, err
 	}
 	return data, nil
 }
 
-// buildAndRequest is the common method that builds and sends a graphql request
-func (c *Client) buildAndRequest(
+// constructQueryAndExecute constructs a GraphQL query from the provided struct
+// and executes it, returning the raw response data and any errors.
+func (c *Client) constructQueryAndExecute(
 	ctx context.Context,
 	op operationType,
 	v any,

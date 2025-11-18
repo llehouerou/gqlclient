@@ -192,18 +192,21 @@ func TestCollectStructFieldsForArguments(t *testing.T) {
 		}
 	})
 
-	t.Run("returns empty slice for struct with no valid fields", func(t *testing.T) {
-		type TestStruct struct {
-			unexported string `json:"unexported"` //nolint:structtag,go-staticcheck // Intentionally unexported for testing
-			NoTag      string
-		}
+	t.Run(
+		"returns empty slice for struct with no valid fields",
+		func(t *testing.T) {
+			type TestStruct struct {
+				unexported string `json:"unexported"` //nolint:structtag,go-staticcheck // Intentionally unexported for testing
+				NoTag      string
+			}
 
-		fields := collectStructFieldsForArguments(TestStruct{})
+			fields := collectStructFieldsForArguments(TestStruct{})
 
-		if len(fields) != 0 {
-			t.Errorf("expected 0 fields, got %d", len(fields))
-		}
-	})
+			if len(fields) != 0 {
+				t.Errorf("expected 0 fields, got %d", len(fields))
+			}
+		},
+	)
 
 	t.Run("preserves field type information", func(t *testing.T) {
 		type TestStruct struct {
@@ -533,7 +536,10 @@ func TestQuery_ErrorPath(t *testing.T) {
 
 		// Check that error is wrapped with "failed to write query"
 		if !contains(err.Error(), "failed to write query") {
-			t.Errorf("expected error to contain 'failed to write query', got: %v", err)
+			t.Errorf(
+				"expected error to contain 'failed to write query', got: %v",
+				err,
+			)
 		}
 
 		// Check that original error message is preserved
@@ -578,7 +584,10 @@ func TestWriteSliceQuery_ErrorPath(t *testing.T) {
 		}
 
 		if !contains(err.Error(), "failed to write query for slice item") {
-			t.Errorf("expected error to contain 'failed to write query for slice item', got: %v", err)
+			t.Errorf(
+				"expected error to contain 'failed to write query for slice item', got: %v",
+				err,
+			)
 		}
 	})
 }
@@ -621,7 +630,9 @@ func TestWriteOrderedMapQuery_ErrorPath(t *testing.T) {
 		var buf bytes.Buffer
 		// [][2]any with map value - should error
 		sliceType := reflect.TypeOf([][2]any{})
-		sliceValue := reflect.ValueOf([][2]any{{"key", map[string]string{"nested": "map"}}})
+		sliceValue := reflect.ValueOf(
+			[][2]any{{"key", map[string]string{"nested": "map"}}},
+		)
 
 		err := writeOrderedMapQuery(&buf, sliceType, sliceValue)
 		if err == nil {
@@ -629,7 +640,10 @@ func TestWriteOrderedMapQuery_ErrorPath(t *testing.T) {
 		}
 
 		if !contains(err.Error(), "failed to write query for pair[1]") {
-			t.Errorf("expected error to contain 'failed to write query for pair[1]', got: %v", err)
+			t.Errorf(
+				"expected error to contain 'failed to write query for pair[1]', got: %v",
+				err,
+			)
 		}
 	})
 }
@@ -649,7 +663,10 @@ func TestWriteInterfaceQuery_ErrorPath(t *testing.T) {
 		}
 
 		if !contains(err.Error(), "failed to write query for interface") {
-			t.Errorf("expected error to contain 'failed to write query for interface', got: %v", err)
+			t.Errorf(
+				"expected error to contain 'failed to write query for interface', got: %v",
+				err,
+			)
 		}
 	})
 
@@ -682,7 +699,10 @@ func TestWriteInterfaceQuery_ErrorPath(t *testing.T) {
 		}
 
 		if buf.String() != "" {
-			t.Errorf("expected empty output for interface with nil pointer, got: %q", buf.String())
+			t.Errorf(
+				"expected empty output for interface with nil pointer, got: %q",
+				buf.String(),
+			)
 		}
 	})
 }
@@ -705,7 +725,10 @@ func TestWriteStructQuery_ErrorPath(t *testing.T) {
 		}
 
 		if !contains(err.Error(), "failed to write query for struct field") {
-			t.Errorf("expected error to contain 'failed to write query for struct field', got: %v", err)
+			t.Errorf(
+				"expected error to contain 'failed to write query for struct field', got: %v",
+				err,
+			)
 		}
 	})
 }
@@ -725,7 +748,10 @@ func TestWriteQuery_PtrErrorPath(t *testing.T) {
 		}
 
 		if !contains(err.Error(), "failed to write query for ptr") {
-			t.Errorf("expected error to contain 'failed to write query for ptr', got: %v", err)
+			t.Errorf(
+				"expected error to contain 'failed to write query for ptr', got: %v",
+				err,
+			)
 		}
 	})
 }
@@ -741,7 +767,10 @@ func TestConstructOptions_InvalidType(t *testing.T) {
 	}
 
 	if !contains(err.Error(), "invalid query option type") {
-		t.Errorf("expected error to contain 'invalid query option type', got: %v", err)
+		t.Errorf(
+			"expected error to contain 'invalid query option type', got: %v",
+			err,
+		)
 	}
 }
 

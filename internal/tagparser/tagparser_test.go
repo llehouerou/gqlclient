@@ -80,7 +80,11 @@ func TestParseGraphQLTag_AliasWithArguments(t *testing.T) {
 	}
 	expectedArgs := `id: "MDEyOklzc3VlQ29tbWVudDE2OTQwNzk0Ng=="`
 	if parsed.Arguments != expectedArgs {
-		t.Errorf("expected Arguments '%s', got '%s'", expectedArgs, parsed.Arguments)
+		t.Errorf(
+			"expected Arguments '%s', got '%s'",
+			expectedArgs,
+			parsed.Arguments,
+		)
 	}
 }
 
@@ -202,7 +206,10 @@ func TestParseGraphQLTag_MultipleColonsInArguments(t *testing.T) {
 		t.Errorf("expected FieldName 'field', got '%s'", parsed.FieldName)
 	}
 	if parsed.Arguments != "a: 1, b: 2, c: 3" {
-		t.Errorf("expected Arguments 'a: 1, b: 2, c: 3', got '%s'", parsed.Arguments)
+		t.Errorf(
+			"expected Arguments 'a: 1, b: 2, c: 3', got '%s'",
+			parsed.Arguments,
+		)
 	}
 }
 
@@ -266,7 +273,10 @@ func TestParseGraphQLTag_NestedParentheses(t *testing.T) {
 	}
 	// Should capture everything inside outer parentheses
 	if parsed.Arguments != "arg: func(nested)" {
-		t.Errorf("expected Arguments 'arg: func(nested)', got '%s'", parsed.Arguments)
+		t.Errorf(
+			"expected Arguments 'arg: func(nested)', got '%s'",
+			parsed.Arguments,
+		)
 	}
 }
 
@@ -285,7 +295,10 @@ func TestParseGraphQLTag_AliasWithColonInFieldName(t *testing.T) {
 	// The rest after the FIRST colon is the field name
 	// (including subsequent colons which are part of the field name)
 	if parsed.FieldName != "http://example.com" {
-		t.Errorf("expected FieldName 'http://example.com', got '%s'", parsed.FieldName)
+		t.Errorf(
+			"expected FieldName 'http://example.com', got '%s'",
+			parsed.FieldName,
+		)
 	}
 }
 
@@ -323,7 +336,11 @@ func TestParseGraphQLTag_EscapedQuotesInArguments(t *testing.T) {
 	}
 	expectedArgs := `derivative:\"low_res\"`
 	if parsed.Arguments != expectedArgs {
-		t.Errorf("expected Arguments '%s', got '%s'", expectedArgs, parsed.Arguments)
+		t.Errorf(
+			"expected Arguments '%s', got '%s'",
+			expectedArgs,
+			parsed.Arguments,
+		)
 	}
 }
 
@@ -340,6 +357,9 @@ func TestParseGraphQLTag_LongFragmentTypename(t *testing.T) {
 		t.Error("expected IsFragment to be true")
 	}
 	if parsed.TypeName != "SolanaTokenTransferAuthorizationRequest" {
-		t.Errorf("expected TypeName 'SolanaTokenTransferAuthorizationRequest', got '%s'", parsed.TypeName)
+		t.Errorf(
+			"expected TypeName 'SolanaTokenTransferAuthorizationRequest', got '%s'",
+			parsed.TypeName,
+		)
 	}
 }

@@ -1411,7 +1411,11 @@ func TestUnmarshalGraphQL_fragmentTypeEdgeCase(t *testing.T) {
 	}
 
 	if got.User.Node.Droid.PrimaryFunction != "Protocol" {
-		t.Errorf("got: %q, want: %q", got.User.Node.Droid.PrimaryFunction, "Protocol")
+		t.Errorf(
+			"got: %q, want: %q",
+			got.User.Node.Droid.PrimaryFunction,
+			"Protocol",
+		)
 	}
 
 	// Human fragment should be empty
@@ -1531,7 +1535,10 @@ func TestUnmarshalGraphQL_nestedFragmentsWithTypename(t *testing.T) {
 
 	// User fragment should be empty since __typename was Bot
 	if got.Repository.Issue.Author.User.Name != "" {
-		t.Errorf("got: %q, want: empty string", got.Repository.Issue.Author.User.Name)
+		t.Errorf(
+			"got: %q, want: empty string",
+			got.Repository.Issue.Author.User.Name,
+		)
 	}
 }
 

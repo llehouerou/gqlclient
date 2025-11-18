@@ -502,12 +502,12 @@ res := struct {
 	Somethings []Something
 }{}
 
-if err := client.Exec(ctx, query, &res, map[string]any{}); err != nil {
+if err := client.ExecuteQuery(ctx, query, &res, map[string]any{}); err != nil {
 	panic(err)
 }
 ```
 
-If you prefer decoding JSON yourself, use `ExecRaw` instead.
+If you prefer decoding JSON yourself, use `ExecuteQueryRaw` instead.
 
 ```Go
 query := `query{something(where: { foo: { _eq: "bar" }}){id}}`
@@ -515,7 +515,7 @@ var res struct {
 	Somethings []Something `json:"something"`
 }
 
-raw, err := client.ExecRaw(ctx, query, map[string]any{}) 
+raw, err := client.ExecuteQueryRaw(ctx, query, map[string]any{}) 
 if err != nil {
 	panic(err)
 }
