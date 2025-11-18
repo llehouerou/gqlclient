@@ -35,17 +35,27 @@
 //
 // Choose the right unwrap function based on your use case:
 //
-//	Need to follow pointer/interface indirection?
-//	  -> Use UnwrapToConcreteValue()
+// 1. GETTING PAST POINTER/INTERFACE INDIRECTION
+//    Need to get to the concrete value beneath pointers or interfaces?
+//    Example: **int -> int, or interface{} containing string -> string
+//    -> Use UnwrapToConcreteValue()
 //
-//	Need to unwrap for query construction (calling methods)?
-//	  -> Use UnwrapValue() (calls GetGraphQLWrapped method)
+// 2. UNWRAPPING FOR QUERY CONSTRUCTION
+//    Building a GraphQL query and need the wrapped value via method call?
+//    Example: MyWrapper{Value: "hello"}.GetGraphQLWrapped() -> "hello"
+//    -> Use UnwrapValue()
 //
-//	Need to unwrap for unmarshaling (writing data)?
-//	  -> Use UnwrapValueField() (accesses Value field)
+// 3. UNWRAPPING FOR UNMARSHALING
+//    Unmarshaling JSON into a wrapper type and need writable field access?
+//    Example: Need to set MyWrapper.Value field during JSON decode
+//    -> Use UnwrapValueField()
 //
-//	Not sure if it's a wrapper type?
-//	  -> Use UnwrapValueOrOriginal() (safe fallback)
+// 4. SAFE UNWRAPPING WITH FALLBACK
+//    Not sure if the value is a wrapper type? Want original if not?
+//    -> Use UnwrapValueOrOriginal()
+//
+// IMPORTANT: These are orthogonal - you may need to unwrap pointers first,
+// then unwrap wrapper types. See unwrap.go for detailed examples and scenarios.
 //
 // # Safe Reflection Accessors
 //

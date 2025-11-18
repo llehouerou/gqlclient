@@ -529,3 +529,111 @@ func TestGetGraphQLType_interfaceValue(t *testing.T) {
 		t.Errorf("got: %q, want: %q", typeName, "CustomScalar")
 	}
 }
+
+// Edge case tests for improved coverage
+
+// WrapperWithNoResults implements GetGraphQLWrapped but returns nothing (malformed)
+type WrapperWithNoResults struct {
+	Value string
+}
+
+func (w WrapperWithNoResults) GetGraphQLWrapped() {
+	// This method returns nothing (void), which is malformed but we need to handle it
+}
+
+func TestUnwrapValue_methodReturnsNoResults(t *testing.T) {
+	// Edge case: GetGraphQLWrapped method exists but returns no values
+	wrapper := WrapperWithNoResults{Value: "test"}
+	v := reflect.ValueOf(wrapper)
+
+	result := UnwrapValue(v)
+	if result.IsValid() {
+		t.Errorf(
+			"UnwrapValue should return invalid value when method returns no results, got: %v",
+			result,
+		)
+	}
+}
+
+func TestIsWrapperType_interfaceContainingNil(t *testing.T) {
+	// Edge case: interface{} containing a nil pointer to a wrapper type
+	var wrapper *TestWrapper[string] = nil
+	var iface any = wrapper
+
+	v := reflect.ValueOf(iface)
+	result := IsWrapperType(v)
+	if result {
+		t.Error("IsWrapperType should return false for interface containing nil pointer")
+	}
+}
+
+func TestIsWrapperType_invalidValue(t *testing.T) {
+	// Edge case: completely invalid reflect.Value
+	var v reflect.Value // zero value, invalid
+
+	result := IsWrapperType(v)
+	if result {
+		t.Error("IsWrapperType should return false for invalid value")
+	}
+}
+
+func TestUnwrapValue_becomesInvalidAfterUnwrap(t *testing.T) {
+	// Edge case: After unwrapping pointers, the value becomes invalid
+	// This is hard to trigger naturally, but we can test with deeply nested nil pointers
+	var ptr *TestWrapper[string] = nil
+	ptrToPtr := &ptr // pointer to nil pointer
+
+	v := reflect.ValueOf(ptrToPtr)
+
+	// First unwrap gets us to ptr (which is nil)
+	// IsWrapperType will check and find it's nil, returning false
+	result := UnwrapValue(v)
+	if result.IsValid() {
+		t.Errorf(
+			"UnwrapValue should return invalid value for nested nil pointers, got: %v",
+			result,
+		)
+	}
+}
+
+func TestUnwrapValueField_becomesInvalidAfterUnwrap(t *testing.T) {
+	// Edge case: pointer to nil wrapper for UnwrapValueField
+	var ptr *TestWrapper[string] = nil
+	ptrToPtr := &ptr
+
+	v := reflect.ValueOf(ptrToPtr)
+	result := UnwrapValueField(v)
+	if result.IsValid() {
+		t.Errorf(
+			"UnwrapValueField should return invalid value for nested nil pointers, got: %v",
+			result,
+		)
+	}
+}
+
+func TestIsWrapperType_nilInterfaceValue(t *testing.T) {
+	// Edge case: nil interface value
+	var iface any = nil
+	v := reflect.ValueOf(iface)
+
+	result := IsWrapperType(v)
+	if result {
+		t.Error("IsWrapperType should return false for nil interface")
+	}
+}
+
+func TestUnwrapValue_methodNotValid(t *testing.T) {
+	// Edge case: struct that IsWrapperType thinks is valid, but method becomes invalid
+	// This tests the defensive check at line 177-179
+	// Using a non-wrapper struct to ensure method lookup fails
+	regular := RegularStruct{Field: "test"}
+	v := reflect.ValueOf(regular)
+
+	result := UnwrapValue(v)
+	if result.IsValid() {
+		t.Errorf(
+			"UnwrapValue should return invalid value for non-wrapper type, got: %v",
+			result,
+		)
+	}
+}

@@ -25,19 +25,50 @@ import (
 // - The "Value" field is used during unmarshaling (needs to be writable)
 // - The GetGraphQLWrapped() method is used during query construction
 //
-// Decision tree for choosing the right unwrap function:
+// CHOOSING THE RIGHT UNWRAP FUNCTION - Decision Tree:
 //
-//	Need to follow pointer/interface indirection?
-//	  -> Use UnwrapToConcreteValue()
+// 1. GETTING PAST POINTER/INTERFACE INDIRECTION
+//    Need to get to the concrete value beneath pointers or interfaces?
+//    Example: **int -> int, or interface{} containing string -> string
+//    -> Use UnwrapToConcreteValue()
 //
-//	Need to unwrap a GraphQL wrapper type for query construction?
-//	  -> Use UnwrapValue() (calls GetGraphQLWrapped method)
+//    Common scenarios:
+//    - Examining the actual type of a value for reflection operations
+//    - Accessing struct fields through pointer indirection
+//    - Getting the element type from a slice or array
 //
-//	Need to unwrap a GraphQL wrapper type for unmarshaling?
-//	  -> Use UnwrapValueField() (accesses Value field)
+// 2. UNWRAPPING GRAPHQL WRAPPER TYPES FOR QUERY CONSTRUCTION
+//    Building a GraphQL query and need the wrapped value via method call?
+//    Example: MyWrapper{Value: "hello"}.GetGraphQLWrapped() -> "hello"
+//    -> Use UnwrapValue()
 //
-//	Not sure if it's a wrapper type?
-//	  -> Use UnwrapValueOrOriginal() (safe fallback)
+//    Common scenarios:
+//    - Query construction where you need the actual GraphQL value
+//    - Reading wrapper types that implement GetGraphQLWrapped()
+//
+// 3. UNWRAPPING GRAPHQL WRAPPER TYPES FOR UNMARSHALING
+//    Unmarshaling JSON into a wrapper type and need writable field access?
+//    Example: Need to set MyWrapper.Value field during JSON decode
+//    -> Use UnwrapValueField()
+//
+//    Common scenarios:
+//    - JSON unmarshaling into wrapper types
+//    - Setting values in wrapper type fields during decoding
+//    - Any operation requiring write access to the wrapped value
+//
+// 4. SAFE UNWRAPPING WITH FALLBACK
+//    Not sure if the value is a wrapper type? Want original if not?
+//    Example: Try to unwrap, but use the value as-is if it's not a wrapper
+//    -> Use UnwrapValueOrOriginal()
+//
+//    Common scenarios:
+//    - Defensive unwrapping where the type may or may not be a wrapper
+//    - Generic code that handles both wrapper and non-wrapper types
+//
+// IMPORTANT: These functions are orthogonal:
+// - UnwrapToConcreteValue() handles language-level indirection (pointers/interfaces)
+// - UnwrapValue/UnwrapValueField/UnwrapValueOrOriginal() handle GraphQL wrapper types
+// - You may need to use BOTH in sequence: first unwrap pointers, then unwrap wrapper
 
 const (
 	// WrapperMethodName is the name of the method that unwraps container types.
