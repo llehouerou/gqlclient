@@ -47,25 +47,6 @@ func IsNillable(kind reflect.Kind) bool {
 	}
 }
 
-// UnwrapToConcreteValue unwraps pointers and interfaces to get to the concrete value.
-// This is a common pattern used throughout the codebase to get past indirection layers.
-// Returns the concrete value, or an invalid reflect.Value if unwrapping fails.
-//
-// Example:
-//
-//	var x **int
-//	v := reflect.ValueOf(x)
-//	concrete := UnwrapToConcreteValue(v) // returns the int value (if not nil)
-func UnwrapToConcreteValue(v reflect.Value) reflect.Value {
-	for v.IsValid() && (v.Kind() == reflect.Ptr || v.Kind() == reflect.Interface) {
-		if v.IsNil() {
-			return reflect.Value{}
-		}
-		v = v.Elem()
-	}
-	return v
-}
-
 // IsNilValue safely checks if a reflect.Value is nil.
 // Returns true if:
 // - The value is invalid
