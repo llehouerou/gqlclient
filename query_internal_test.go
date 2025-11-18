@@ -99,7 +99,7 @@ func TestCollectStructFieldsForArguments(t *testing.T) {
 	t.Run("skips unexported fields", func(t *testing.T) {
 		type TestStruct struct {
 			Public  string `json:"public"`
-			private string //nolint:structtag,go-staticcheck // Intentionally unexported for testing
+			private string //nolint:unused // Intentionally unexported for testing
 		}
 
 		fields := collectStructFieldsForArguments(TestStruct{
@@ -196,7 +196,7 @@ func TestCollectStructFieldsForArguments(t *testing.T) {
 		"returns empty slice for struct with no valid fields",
 		func(t *testing.T) {
 			type TestStruct struct {
-				unexported string `json:"unexported"` //nolint:structtag,go-staticcheck // Intentionally unexported for testing
+				unexported string `json:"unexported"` //nolint:unused,govet // Intentionally unexported for testing
 				NoTag      string
 			}
 
