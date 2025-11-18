@@ -152,6 +152,21 @@ func newSimpleErrors(code string, err error) Errors {
 	return Errors{newError(code, err)}
 }
 
+// Convenience factory functions for common error types with predefined codes.
+// These functions standardize error creation and make the error type explicit.
+
+// newJSONDecodeError creates an error for JSON decoding failures.
+// Used when the HTTP response body cannot be parsed as valid JSON.
+func newJSONDecodeError(err error) Error {
+	return newError(ErrJsonDecode, err)
+}
+
+// newGraphQLDecodeError creates an error for GraphQL response unmarshaling failures.
+// Used when GraphQL JSON cannot be unmarshaled into the target Go struct.
+func newGraphQLDecodeError(err error) Error {
+	return newError(ErrGraphQLDecode, err)
+}
+
 // withDebugInfo adds debug information to the error's internal extensions.
 // It reads the body from bodyReader and stores it along with headers under the
 // specified infoType key ("request" or "response").

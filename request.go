@@ -96,7 +96,7 @@ func (c *Client) request(
 	request, reqBody, err := c.BuildRequest(ctx, query, variables)
 	if err != nil {
 		e := c.NewRequestError(
-			ErrRequestError,
+			ErrJsonEncode,
 			fmt.Errorf("problem constructing request: %w", err),
 			request,
 			nil,
@@ -138,7 +138,7 @@ func (c *Client) request(
 	// Handle gzip decompression
 	r, err := handleGzipResponse(resp, resp.Body)
 	if err != nil {
-		return nil, nil, nil, newSimpleErrors(ErrJsonDecode, err)
+		return nil, nil, nil, Errors{newJSONDecodeError(err)}
 	}
 	defer func() { _ = r.Close() }()
 
@@ -149,7 +149,7 @@ func (c *Client) request(
 		var debugReader io.Reader
 		respBody, debugReader, err = copyResponseForDebug(r)
 		if err != nil {
-			return nil, nil, nil, newSimpleErrors(ErrJsonDecode, err)
+			return nil, nil, nil, Errors{newJSONDecodeError(err)}
 		}
 		respReader = debugReader.(*bytes.Reader)
 		r = io.NopCloser(respReader)

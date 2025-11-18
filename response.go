@@ -49,7 +49,7 @@ func (c *Client) DecodeResponse(reader io.Reader) ([]byte, Errors) {
 
 	err := json.NewDecoder(reader).Decode(&out)
 	if err != nil {
-		return nil, newSimpleErrors(ErrJsonDecode, err)
+		return nil, Errors{newJSONDecodeError(err)}
 	}
 
 	var rawData []byte
@@ -76,7 +76,7 @@ func (c *Client) processResponse(
 		err := decode.UnmarshalGraphQL(data, v)
 		if err != nil {
 			we := c.DecorateError(
-				newError(ErrGraphQLDecode, err),
+				newGraphQLDecodeError(err),
 				nil,
 				resp,
 				nil,
