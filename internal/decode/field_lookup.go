@@ -9,38 +9,6 @@ import (
 	"github.com/llehouerou/gqlclient/types"
 )
 
-// isGraphQLFragment reports whether struct field f is a GraphQL fragment.
-func isGraphQLFragment(f reflect.StructField) bool {
-	value, ok := f.Tag.Lookup(types.GraphQLTag)
-	if !ok {
-		return false
-	}
-	return keyForGraphQLFragment(value)
-}
-
-// keyForGraphQLFragment reports whether an ordered map key is a GraphQL fragment.
-func keyForGraphQLFragment(value string) bool {
-	parsed, err := tagparser.ParseGraphQLTag(value)
-	if err != nil {
-		return false
-	}
-	return parsed.IsFragment
-}
-
-// extractFragmentTypename extracts the typename from a GraphQL fragment tag.
-// For example, "... on SolanaTokenTransferAuthorizationRequest" returns "SolanaTokenTransferAuthorizationRequest".
-// Returns empty string if not a valid fragment tag.
-func extractFragmentTypename(tag string) string {
-	parsed, err := tagparser.ParseGraphQLTag(tag)
-	if err != nil {
-		return ""
-	}
-	if !parsed.IsFragment {
-		return ""
-	}
-	return parsed.TypeName
-}
-
 // fieldByGraphQLName returns an exported struct field of struct v
 // that matches GraphQL name, or invalid reflect.Value if none found.
 func fieldByGraphQLName(

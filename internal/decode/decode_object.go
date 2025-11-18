@@ -7,6 +7,7 @@ import (
 	"io"
 	"reflect"
 
+	"github.com/llehouerou/gqlclient/internal/fragments"
 	"github.com/llehouerou/gqlclient/internal/reflectutil"
 	"github.com/llehouerou/gqlclient/types"
 )
@@ -201,10 +202,10 @@ func (d *decoder) decodeObjectStart() {
 		if v.Kind() == reflect.Struct {
 			for i := 0; i < v.NumField(); i++ {
 				field := v.Type().Field(i)
-				if isGraphQLFragment(field) {
+				if fragments.IsStructField(field) {
 					// Add GraphQL fragment and track its typename
 					tag, _ := field.Tag.Lookup(types.GraphQLTag)
-					d.vs.addStack(v.Field(i), extractFragmentTypename(tag))
+					d.vs.addStack(v.Field(i), fragments.ExtractTypename(tag))
 					frontier = append(frontier, v.Field(i))
 				} else if field.Anonymous {
 					// Add embedded struct (not a fragment)
@@ -217,9 +218,9 @@ func (d *decoder) decodeObjectStart() {
 				pair := v.Index(i)
 				key, val := pair.Index(0), pair.Index(1)
 				keyStr := key.Interface().(string)
-				if keyForGraphQLFragment(keyStr) {
+				if fragments.IsTag(keyStr) {
 					// Add GraphQL fragment and track its typename
-					d.vs.addStack(val, extractFragmentTypename(keyStr))
+					d.vs.addStack(val, fragments.ExtractTypename(keyStr))
 					frontier = append(frontier, val)
 				}
 			}
