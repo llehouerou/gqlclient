@@ -2,27 +2,23 @@ package decode
 
 import (
 	"reflect"
-	"strings"
 
-	"github.com/llehouerou/gqlclient/internal/reflectutil"
 	"github.com/llehouerou/gqlclient/internal/tagparser"
-	"github.com/llehouerou/gqlclient/types"
 )
 
 // fieldByGraphQLName returns an exported struct field of struct v
 // that matches GraphQL name, or invalid reflect.Value if none found.
+//
+// Field metadata is precomputed per reflect.Type and cached, so this is
+// O(N_fields) string compares in the hot path (no reflection or tag
+// parsing per call). See field_cache.go.
 func fieldByGraphQLName(
 	v reflect.Value,
 	name string,
 ) (val reflect.Value, taggedAsScalar bool) {
-	for i := 0; i < v.NumField(); i++ {
-		if v.Type().Field(i).PkgPath != "" {
-			// Skip unexported field.
-			continue
-		}
-		if hasGraphQLName(v.Type().Field(i), v.Field(i), name) {
-			return v.Field(i), hasScalarTag(v.Type().Field(i))
-		}
+	tbl := lookupFieldTable(v.Type())
+	if i, scalar, ok := tbl.lookup(v, name); ok {
+		return v.Field(i), scalar
 	}
 	return reflect.Value{}, false
 }
@@ -38,36 +34,6 @@ func orderedMapValueByGraphQLName(v reflect.Value, name string) reflect.Value {
 		}
 	}
 	return reflect.Value{}
-}
-
-// hasScalarTag reports whether struct field f has the scalar:"true" tag.
-func hasScalarTag(f reflect.StructField) bool {
-	return reflectutil.IsTrue(f.Tag.Get(types.ScalarTag))
-}
-
-// hasGraphQLName reports whether struct field f has GraphQL name.
-func hasGraphQLName(f reflect.StructField, v reflect.Value, name string) bool {
-	value := ""
-	ok := false
-	if reflectutil.ImplementsGraphQLType(f.Type) {
-		typeName, typeok := reflectutil.GetGraphQLType(v, f.Type)
-		if typeok {
-			value = typeName
-			ok = true
-		}
-	}
-	if !ok {
-		value, ok = f.Tag.Lookup(types.GraphQLTag)
-	}
-	if !ok {
-		// Fall back to case-insensitive comparison when no graphql tag is present.
-		// Using strings.EqualFold instead of caseconv.MixedCapsToLowerCamelCase
-		// for better performance. This is slightly less precise (doesn't handle
-		// camelCase conversion) but works well in practice since most GraphQL
-		// schemas use standard naming conventions.
-		return strings.EqualFold(f.Name, name)
-	}
-	return keyHasGraphQLName(value, name)
 }
 
 // keyHasGraphQLName reports whether a tag value matches a GraphQL field name.
