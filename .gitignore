@@ -9,4 +9,7 @@ coverage*.html
 *.so
 *.dylib
 
+# Nix / direnv
+.direnv/
+
 REFACTORING.md
