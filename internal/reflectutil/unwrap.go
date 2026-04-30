@@ -2,6 +2,7 @@ package reflectutil
 
 import (
 	"reflect"
+	"sync"
 
 	"github.com/llehouerou/gqlclient/types"
 )
@@ -114,6 +115,25 @@ func UnwrapToConcreteValue(v reflect.Value) reflect.Value {
 // WRAPPER TYPE UNWRAPPING
 // ============================================================================
 
+// hasGraphQLWrappedMethodCache memoizes per-type "does this concrete type
+// expose a GetGraphQLWrapped method" answers. We can't use
+// t.Implements(GraphqlWrapperInterface) because generic wrappers declare
+// GetGraphQLWrapped() T (not any), so MethodByName is the source of truth
+// — but the answer is still constant per type, so we cache it.
+var hasGraphQLWrappedMethodCache sync.Map // map[reflect.Type]bool
+
+// hasGraphQLWrappedMethod reports whether a value of type t (or its
+// addressable form) has a GetGraphQLWrapped method in its method set.
+// Result is cached per reflect.Type.
+func hasGraphQLWrappedMethod(t reflect.Type) bool {
+	if cached, ok := hasGraphQLWrappedMethodCache.Load(t); ok {
+		return cached.(bool)
+	}
+	has := reflect.Zero(t).MethodByName(WrapperMethodName).IsValid()
+	hasGraphQLWrappedMethodCache.Store(t, has)
+	return has
+}
+
 // IsWrapperType reports whether the given reflect.Value is a wrapper type.
 // A wrapper type is one that implements the GetGraphQLWrapped() method.
 // Returns false if the value is invalid or nil.
@@ -134,8 +154,7 @@ func IsWrapperType(v reflect.Value) bool {
 		return false
 	}
 
-	method := v.MethodByName(WrapperMethodName)
-	return method.IsValid()
+	return hasGraphQLWrappedMethod(v.Type())
 }
 
 // UnwrapValue unwraps a wrapper type by calling its GetGraphQLWrapped() method.
@@ -268,11 +287,22 @@ func UnwrapValueOrOriginal(v reflect.Value) reflect.Value {
 // GRAPHQL TYPE HELPERS
 // ============================================================================
 
+// implementsGraphQLTypeCache memoizes ImplementsGraphQLType results per
+// reflect.Type. The answer is constant for a given type, so caching
+// turns a reflect.(*rtype).Implements call into a sync.Map load on the
+// hot path.
+var implementsGraphQLTypeCache sync.Map // map[reflect.Type]bool
+
 // ImplementsGraphQLType reports whether the given type implements the
 // GraphQLType interface. This checks if the type provides a custom GraphQL
 // type name via GetGraphQLType().
 func ImplementsGraphQLType(t reflect.Type) bool {
-	return t.Implements(types.GraphqlTypeInterface)
+	if cached, ok := implementsGraphQLTypeCache.Load(t); ok {
+		return cached.(bool)
+	}
+	result := t.Implements(types.GraphqlTypeInterface)
+	implementsGraphQLTypeCache.Store(t, result)
+	return result
 }
 
 // GetGraphQLType extracts the GraphQL type name from a value that implements
