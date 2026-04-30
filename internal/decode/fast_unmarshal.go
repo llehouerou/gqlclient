@@ -21,7 +21,6 @@ import (
 var (
 	jsonUnmarshalerType = reflect.TypeOf((*json.Unmarshaler)(nil)).Elem()
 	jsonNumberType      = reflect.TypeOf(json.Number(""))
-	jsonRawMessageType  = reflect.TypeOf(json.RawMessage(nil))
 )
 
 // jsonUnmarshalerCache memoizes whether a given target type, or a
@@ -166,16 +165,6 @@ func fastUnmarshal(value any, v reflect.Value) (bool, error) {
 		}
 		return false, nil
 
-	case json.RawMessage:
-		// RawMessage going into RawMessage: copy bytes directly.
-		// Anything else needs real JSON parsing — slow path.
-		if targetType == jsonRawMessageType {
-			cp := make(json.RawMessage, len(tok))
-			copy(cp, tok)
-			v.SetBytes(cp)
-			return true, nil
-		}
-		return false, nil
 	}
 
 	return false, nil
