@@ -62,7 +62,12 @@ func (t *fieldLookupTable) lookup(
 			if liveName, gtok := reflectutil.GetGraphQLType(
 				fv, e.fieldType,
 			); gtok {
-				if liveName == name {
+				// liveName may be parameterized like "card(slug:$slug)"
+				// or aliased like "x: card(...)" — the JSON response
+				// key is just the bare field/alias name. Run it
+				// through the same tag parser the legacy decoder used
+				// so we match on FieldName/Alias, not the raw string.
+				if keyHasGraphQLName(liveName, name) {
 					return e.fieldIndex, e.isScalar, true
 				}
 				// GraphQLType produced a name that did not match — the

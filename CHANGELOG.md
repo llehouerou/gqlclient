@@ -2,6 +2,21 @@
 
 All notable changes to this project are documented in this file.
 
+## v0.15.1
+
+### Fixes
+
+- `fix(decode):` preserve tag-parser matching for dynamic GraphQLType
+  fields (regression from v0.15.0). When a struct field's type
+  implements `types.GraphQLType` and `GetGraphQLType()` returns a
+  parameterized expression (e.g. `"card(slug:$slug)"`) or an alias
+  (e.g. `"x: card(...)"`), the JSON response key is the bare
+  field/alias name. The v0.15.0 cached lookup compared the live
+  GraphQLType result to the response key with raw string equality and
+  missed those matches; the legacy v0.14 path ran the result through
+  `tagparser.ParseGraphQLTag` to extract `FieldName`/`Alias` first.
+  v0.15.1 restores the tag-parser step on the cached path.
+
 ## v0.15.0
 
 ### Performance
