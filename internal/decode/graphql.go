@@ -232,12 +232,18 @@ func (d *decoder) state() json.Delim {
 // unmarshalValue unmarshals JSON value into v.
 // v must be addressable and not obtained by the use of unexported
 // struct fields, otherwise unmarshalValue will panic.
+//
+// Common scalar shapes (string, bool, json.Number into numeric kinds,
+// json.RawMessage to json.RawMessage, JSON null) are handled directly
+// by fastUnmarshal without round-tripping through json.Marshal +
+// json.Unmarshal. Anything fastUnmarshal declines (json.Unmarshaler
+// implementations, interface targets, raw-message transcoding) falls
+// through to the reference path, which preserves all encoding/json
+// semantics.
 func unmarshalValue(value any, v reflect.Value) error {
-	// This function uses json.Marshal + json.Unmarshal to convert JSON tokens
-	// (from the tokenizer) into Go values. While this could be optimized with
-	// direct type conversion for simple cases (string, number, bool), the current
-	// approach handles all edge cases correctly (custom UnmarshalJSON, etc.).
-	// TODO: Profile to measure impact, then consider optimizing hot paths if needed.
+	if handled, err := fastUnmarshal(value, v); handled {
+		return err
+	}
 	b, err := json.Marshal(value)
 	if err != nil {
 		return err
