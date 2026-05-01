@@ -12,7 +12,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/llehouerou/gqlclient"
+	graphql "github.com/llehouerou/gqlclient"
 )
 
 func TestClient_Query_partialDataWithErrorResponse(t *testing.T) {
@@ -677,7 +677,6 @@ func TestClient_Query_withWrapper(t *testing.T) {
 	if got, want := q.GetNodes().Value.Value2.ID, "123"; got != want {
 		t.Errorf("got q.User.Name: %q, want: %q", got, want)
 	}
-
 }
 
 // TestClient_Query_multiLevelNesting tests wrapper with multiple nesting levels
@@ -790,6 +789,7 @@ func TestClient_Query_StructVariables(t *testing.T) {
 			},
 			responseBody: `{"data":{"hero":{"name":"Han Solo"}}}`,
 			validateQuery: func(t *testing.T, q any) {
+				t.Helper()
 				query := q.(*struct {
 					Hero struct {
 						Name string
@@ -800,6 +800,7 @@ func TestClient_Query_StructVariables(t *testing.T) {
 				}
 			},
 			validateVars: func(t *testing.T, vars map[string]any) {
+				t.Helper()
 				if got, want := vars["characterId"], "1003"; got != want {
 					t.Errorf(
 						"got characterId: %v, want: %v",
@@ -823,6 +824,7 @@ func TestClient_Query_StructVariables(t *testing.T) {
 			},
 			responseBody: `{"data":{"hero":{"name":"Luke Skywalker"}}}`,
 			validateQuery: func(t *testing.T, q any) {
+				t.Helper()
 				query := q.(*struct {
 					Hero struct {
 						Name string
@@ -833,6 +835,7 @@ func TestClient_Query_StructVariables(t *testing.T) {
 				}
 			},
 			validateVars: func(t *testing.T, vars map[string]any) {
+				t.Helper()
 				if got, want := vars["characterId"], "1003"; got != want {
 					t.Errorf("got characterId: %v, want: %v", got, want)
 				}
@@ -848,6 +851,7 @@ func TestClient_Query_StructVariables(t *testing.T) {
 			},
 			responseBody: `{"data":{"hero":{"name":"C-3PO"}}}`,
 			validateQuery: func(t *testing.T, q any) {
+				t.Helper()
 				query := q.(*struct {
 					Hero struct {
 						Name string
@@ -858,6 +862,7 @@ func TestClient_Query_StructVariables(t *testing.T) {
 				}
 			},
 			validateVars: func(t *testing.T, vars map[string]any) {
+				t.Helper()
 				// JSON unmarshaling converts graphql.ID to string
 				if got, want := vars["characterId"], "2000"; got != want {
 					t.Errorf("got characterId: %v, want: %v", got, want)
@@ -1058,13 +1063,13 @@ func TestClient_decorateError(t *testing.T) {
 
 		// Create a mock request and response
 		reqBody := `{"query":"{test}"}`
-		req, err := http.NewRequest(http.MethodPost, "http://example.com", nil)
+		req, err := http.NewRequest(http.MethodPost, "http://example.com", http.NoBody)
 		if err != nil {
 			t.Fatal(err)
 		}
 
 		resp := &http.Response{
-			StatusCode: 200,
+			StatusCode: http.StatusOK,
 			Header:     http.Header{"Content-Type": []string{"application/json"}},
 		}
 
@@ -1107,13 +1112,13 @@ func TestClient_decorateError(t *testing.T) {
 		client := graphql.NewClient("http://example.com", nil).WithDebug(false)
 
 		reqBody := `{"query":"{test}"}`
-		req, err := http.NewRequest(http.MethodPost, "http://example.com", nil)
+		req, err := http.NewRequest(http.MethodPost, "http://example.com", http.NoBody)
 		if err != nil {
 			t.Fatal(err)
 		}
 
 		resp := &http.Response{
-			StatusCode: 200,
+			StatusCode: http.StatusOK,
 			Header:     http.Header{"Content-Type": []string{"application/json"}},
 		}
 
@@ -1261,13 +1266,13 @@ func TestClient_newRequestError(t *testing.T) {
 		client := graphql.NewClient("http://example.com", nil).WithDebug(true)
 
 		reqBody := `{"query":"{test}"}`
-		req, err := http.NewRequest(http.MethodPost, "http://example.com", nil)
+		req, err := http.NewRequest(http.MethodPost, "http://example.com", http.NoBody)
 		if err != nil {
 			t.Fatal(err)
 		}
 
 		resp := &http.Response{
-			StatusCode: 500,
+			StatusCode: http.StatusInternalServerError,
 			Header:     http.Header{"Content-Type": []string{"application/json"}},
 		}
 
@@ -1776,6 +1781,7 @@ func TestClient_executeRequest(t *testing.T) {
 		if execErr != nil {
 			t.Fatalf("unexpected error: %v", execErr)
 		}
+		defer func() { _ = resp.Body.Close() }()
 
 		if resp.StatusCode != http.StatusOK {
 			t.Errorf("expected status 200, got %d", resp.StatusCode)
@@ -1812,7 +1818,7 @@ func TestClient_executeRequest(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		_, _, execErr := client.ExecuteRequest(req)
+		_, _, execErr := client.ExecuteRequest(req) //nolint:bodyclose // ExecuteRequest closes the body before returning a non-nil error
 		if execErr == nil {
 			t.Fatal("expected error for non-200 status, got nil")
 		}
@@ -1851,6 +1857,7 @@ func TestClient_executeRequest(t *testing.T) {
 		if execErr != nil {
 			t.Fatalf("unexpected error: %v", execErr)
 		}
+		defer func() { _ = resp.Body.Close() }()
 
 		if resp.Header.Get("Content-Encoding") != "gzip" {
 			t.Errorf(
@@ -2330,14 +2337,14 @@ func TestError_GetInternalExtensions(t *testing.T) {
 
 		reqBody := `{"query":"{test}"}`
 		respBody := `{"data":null,"errors":[{"message":"error"}]}`
-		req, err := http.NewRequest(http.MethodPost, "http://example.com", nil)
+		req, err := http.NewRequest(http.MethodPost, "http://example.com", http.NoBody)
 		if err != nil {
 			t.Fatal(err)
 		}
 		req.Header.Set("Content-Type", "application/json")
 
 		resp := &http.Response{
-			StatusCode: 200,
+			StatusCode: http.StatusOK,
 			Header:     http.Header{"Content-Type": []string{"application/json"}},
 		}
 
@@ -2508,7 +2515,7 @@ func TestClient_ExecuteRequest(t *testing.T) {
 			&http.Client{Transport: localRoundTripper{handler: mux}},
 		)
 
-		req, err := http.NewRequest("POST", "/graphql", nil)
+		req, err := http.NewRequest(http.MethodPost, "/graphql", http.NoBody)
 		if err != nil {
 			t.Fatalf("failed to create request: %v", err)
 		}
@@ -2549,7 +2556,7 @@ func TestClient_ExecuteRequest(t *testing.T) {
 			&http.Client{Transport: localRoundTripper{handler: mux}},
 		)
 
-		req, err := http.NewRequest("POST", "/graphql", nil)
+		req, err := http.NewRequest(http.MethodPost, "/graphql", http.NoBody)
 		if err != nil {
 			t.Fatalf("failed to create request: %v", err)
 		}
@@ -2581,12 +2588,12 @@ func TestClient_ExecuteRequest(t *testing.T) {
 			&http.Client{Transport: localRoundTripper{handler: mux}},
 		)
 
-		req, err := http.NewRequest("POST", "/graphql", nil)
+		req, err := http.NewRequest(http.MethodPost, "/graphql", http.NoBody)
 		if err != nil {
 			t.Fatalf("failed to create request: %v", err)
 		}
 
-		_, _, err = client.ExecuteRequest(req)
+		_, _, err = client.ExecuteRequest(req) //nolint:bodyclose // ExecuteRequest closes the body before returning a non-nil error
 		if err == nil {
 			t.Fatal("expected error for non-200 status code, got nil")
 		}

@@ -119,6 +119,7 @@ func fastUnmarshal(value any, v reflect.Value) (bool, error) {
 			reflect.Int64:
 			n, err := strconv.ParseInt(string(tok), 10, 64)
 			if err != nil {
+				//nolint:nilerr // not handled here; caller falls back to slow path
 				return false, nil
 			}
 			if v.OverflowInt(n) {
@@ -137,6 +138,7 @@ func fastUnmarshal(value any, v reflect.Value) (bool, error) {
 			reflect.Uint64:
 			u, err := strconv.ParseUint(string(tok), 10, 64)
 			if err != nil {
+				//nolint:nilerr // not handled here; caller falls back to slow path
 				return false, nil
 			}
 			if v.OverflowUint(u) {
@@ -151,6 +153,7 @@ func fastUnmarshal(value any, v reflect.Value) (bool, error) {
 		case reflect.Float32, reflect.Float64:
 			f, err := strconv.ParseFloat(string(tok), 64)
 			if err != nil {
+				//nolint:nilerr // not handled here; caller falls back to slow path
 				return false, nil
 			}
 			if v.OverflowFloat(f) {
@@ -164,7 +167,6 @@ func fastUnmarshal(value any, v reflect.Value) (bool, error) {
 			return true, nil
 		}
 		return false, nil
-
 	}
 
 	return false, nil

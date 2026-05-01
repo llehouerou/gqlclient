@@ -11,7 +11,7 @@ import (
 // to slices in the decoder's value stack.
 func (d *decoder) decodeArrayValue() error {
 	someSliceExist := false
-	for i := 0; i < d.vs.len(); i++ {
+	for i := range d.vs.len() {
 		v := d.vs.top(i)
 		v = reflectutil.UnwrapToConcreteValue(v)
 
@@ -52,7 +52,7 @@ func (d *decoder) decodeArrayValue() error {
 func (d *decoder) decodeArrayStart() error {
 	d.pushState('[')
 
-	for i := 0; i < d.vs.len(); i++ {
+	for i := range d.vs.len() {
 		v := d.vs.top(i)
 		// Initialize nil pointers before unwrapping.
 		// This handles cases like *[]string where the pointer is nil.
@@ -129,7 +129,7 @@ func isOrderedMap(v reflect.Value) bool {
 // copyOrderedMap creates a shallow copy of an ordered map.
 func copyOrderedMap(m reflect.Value) reflect.Value {
 	newMap := reflect.MakeSlice(m.Type(), 0, m.Len())
-	for i := 0; i < m.Len(); i++ {
+	for i := range m.Len() {
 		pair := m.Index(i)
 		newMap = reflect.Append(newMap, pair)
 	}

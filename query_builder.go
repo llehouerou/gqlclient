@@ -33,7 +33,6 @@ func writeQuery(
 	v reflect.Value,
 	inline bool,
 ) error {
-
 	switch t.Kind() {
 	case reflect.Interface:
 		return writeInterfaceQuery(w, t, v, inline)

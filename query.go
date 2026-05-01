@@ -104,7 +104,7 @@ func constructOperation(
 //
 // The variables parameter must be either nil, a map[string]any, or a struct/pointer to struct
 // with json tags. Passing any other type will cause a panic (programming error).
-func ConstructQuery(v any, variables any, options ...Option) (string, error) {
+func ConstructQuery(v, variables any, options ...Option) (string, error) {
 	return constructOperation("query", v, variables, false, options...)
 }
 

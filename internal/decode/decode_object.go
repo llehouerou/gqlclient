@@ -65,7 +65,7 @@ func (d *decoder) findFieldsForKey(
 	hasMatchingFragmentWithField := false
 	rawMessage := false
 
-	for i := 0; i < d.vs.len(); i++ {
+	for i := range d.vs.len() {
 		v := d.vs.top(i)
 		v = reflectutil.UnwrapToConcreteValue(v)
 
@@ -125,7 +125,7 @@ func (d *decoder) selectAndPushFields(
 	fields []fieldInfo,
 	hasMatchingFragmentWithField bool,
 ) (someFieldExist, isScalar bool) {
-	for i := 0; i < d.vs.len(); i++ {
+	for i := range d.vs.len() {
 		f := fields[i].field
 
 		if f.IsValid() {
@@ -167,7 +167,7 @@ func (d *decoder) readNextToken(rawMessage, isScalar bool) (any, error) {
 	// Read the next token, which should be the value,
 	// and let the rest of code process it.
 	tok, err := d.tokenizer.Token()
-	if err == io.EOF {
+	if errors.Is(err, io.EOF) {
 		return nil, errors.New("unexpected end of JSON input")
 	} else if err != nil {
 		return nil, err
@@ -181,8 +181,10 @@ func (d *decoder) readNextToken(rawMessage, isScalar bool) (any, error) {
 func (d *decoder) decodeObjectStart() {
 	d.pushState('{')
 
+	// frontier is a BFS queue: the prefix is seeded initial state,
+	// appends below extend the queue.
 	frontier := make([]reflect.Value, d.vs.len())
-	for i := 0; i < d.vs.len(); i++ {
+	for i := range d.vs.len() {
 		v := d.vs.top(i)
 		frontier[i] = v
 		// Initialize only the immediate nil pointer, not recursively.
@@ -200,28 +202,28 @@ func (d *decoder) decodeObjectStart() {
 		v = reflectutil.UnwrapToConcreteValue(v)
 
 		if v.Kind() == reflect.Struct {
-			for i := 0; i < v.NumField(); i++ {
+			for i := range v.NumField() {
 				field := v.Type().Field(i)
 				if fragments.IsStructField(field) {
 					// Add GraphQL fragment and track its typename
 					tag, _ := field.Tag.Lookup(types.GraphQLTag)
 					d.vs.addStack(v.Field(i), fragments.ExtractTypename(tag))
-					frontier = append(frontier, v.Field(i))
+					frontier = append(frontier, v.Field(i)) //nolint:makezero // BFS queue extension; see frontier init above
 				} else if field.Anonymous {
 					// Add embedded struct (not a fragment)
 					d.vs.addStack(v.Field(i), "")
-					frontier = append(frontier, v.Field(i))
+					frontier = append(frontier, v.Field(i)) //nolint:makezero // BFS queue extension; see frontier init above
 				}
 			}
 		} else if isOrderedMap(v) {
-			for i := 0; i < v.Len(); i++ {
+			for i := range v.Len() {
 				pair := v.Index(i)
 				key, val := pair.Index(0), pair.Index(1)
 				keyStr := key.Interface().(string)
 				if fragments.IsTag(keyStr) {
 					// Add GraphQL fragment and track its typename
 					d.vs.addStack(val, fragments.ExtractTypename(keyStr))
-					frontier = append(frontier, val)
+					frontier = append(frontier, val) //nolint:makezero // BFS queue extension; see frontier init above
 				}
 			}
 		}

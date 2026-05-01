@@ -51,7 +51,7 @@ func BenchmarkUnmarshalGraphQL(b *testing.B) {
 			CreatedAt time.Time
 		}
 	}
-	for i := 0; i < b.N; i++ {
+	for range b.N {
 		now := time.Now().UTC()
 		var got query
 		err := decode.UnmarshalGraphQL([]byte(`{
@@ -79,7 +79,7 @@ func BenchmarkJSONUnmarshal(b *testing.B) {
 			CreatedAt time.Time
 		}
 	}
-	for i := 0; i < b.N; i++ {
+	for range b.N {
 		now := time.Now().UTC()
 		var got query
 		err := json.Unmarshal([]byte(`{
@@ -101,7 +101,7 @@ func BenchmarkJSONUnmarshal(b *testing.B) {
 }
 
 func BenchmarkJSONTokenize(b *testing.B) {
-	for i := 0; i < b.N; i++ {
+	for range b.N {
 		now := time.Now().UTC()
 		dec := json.NewDecoder(strings.NewReader(`{
 			"viewer": {

@@ -110,7 +110,7 @@ func writeStructFields(
 	v reflect.Value,
 ) error {
 	iter := 0
-	for i := 0; i < t.NumField(); i++ {
+	for i := range t.NumField() {
 		f := t.Field(i)
 		fieldVal := reflectutil.FieldSafe(v, i)
 		output := processStructField(f, fieldVal)
@@ -192,5 +192,7 @@ func writeStructQuery(
 	return nil
 }
 
-var jsonUnmarshaler = reflect.TypeOf((*json.Unmarshaler)(nil)).Elem()
-var idType = reflect.TypeOf(ID(""))
+var (
+	jsonUnmarshaler = reflect.TypeOf((*json.Unmarshaler)(nil)).Elem()
+	idType          = reflect.TypeOf(ID(""))
+)

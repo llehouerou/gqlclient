@@ -125,7 +125,7 @@ func (c *Client) ExecuteQuery(
 	variables map[string]any,
 	options ...Option,
 ) error {
-	data, resp, respBuf, errs := c.request(ctx, query, variables)
+	data, resp, respBuf, errs := c.request(ctx, query, variables) //nolint:bodyclose // closed inside c.request
 	return c.processResponse(v, data, resp, respBuf, errs)
 }
 
@@ -139,7 +139,7 @@ func (c *Client) ExecuteQueryRaw(
 	variables map[string]any,
 	options ...Option,
 ) ([]byte, error) {
-	data, _, _, errs := c.request(ctx, query, variables)
+	data, _, _, errs := c.request(ctx, query, variables) //nolint:bodyclose // closed inside c.request
 	if len(errs) > 0 {
 		return data, errs
 	}
@@ -215,6 +215,7 @@ func (c *Client) executeAndUnmarshal(
 	variables any,
 	options ...Option,
 ) error {
+	//nolint:bodyclose // closed inside c.request, called by c.constructQueryAndExecute
 	data, resp, respBuf, errs := c.constructQueryAndExecute(
 		ctx,
 		op,
@@ -233,6 +234,7 @@ func (c *Client) executeForRawJSON(
 	variables any,
 	options ...Option,
 ) ([]byte, error) {
+	//nolint:bodyclose // closed inside c.request, called by c.constructQueryAndExecute
 	data, _, _, err := c.constructQueryAndExecute(
 		ctx,
 		op,

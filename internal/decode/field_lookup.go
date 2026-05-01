@@ -26,7 +26,7 @@ func fieldByGraphQLName(
 // orderedMapValueByGraphQLName takes [][2]string, interprets it as an ordered map
 // and returns value for corresponding key, or invalid reflect.Value if none found.
 func orderedMapValueByGraphQLName(v reflect.Value, name string) reflect.Value {
-	for i := 0; i < v.Len(); i++ {
+	for i := range v.Len() {
 		pair := v.Index(i)
 		key := pair.Index(0).Interface().(string)
 		if keyHasGraphQLName(key, name) {

@@ -3,7 +3,7 @@ package graphql_test
 import (
 	"testing"
 
-	"github.com/llehouerou/gqlclient"
+	graphql "github.com/llehouerou/gqlclient"
 )
 
 // TestNewID tests the NewID and ToID helper functions for the ID type.
@@ -12,12 +12,12 @@ func TestNewID(t *testing.T) {
 	t.Run("string input", func(t *testing.T) {
 		got := graphql.NewID("")
 		if got == nil {
-			t.Error("NewID returned nil for empty string")
+			t.Fatal("NewID returned nil for empty string")
 		}
 
 		got = graphql.NewID("user-123")
 		if got == nil {
-			t.Error("NewID returned nil for non-empty string")
+			t.Fatal("NewID returned nil for non-empty string")
 		}
 		if *got != "user-123" {
 			t.Errorf("NewID(\"user-123\") = %q, want \"user-123\"", *got)
@@ -27,7 +27,7 @@ func TestNewID(t *testing.T) {
 	t.Run("integer input", func(t *testing.T) {
 		got := graphql.NewID(0)
 		if got == nil {
-			t.Error("NewID returned nil for integer 0")
+			t.Fatal("NewID returned nil for integer 0")
 		}
 		if *got != "" {
 			t.Errorf("NewID(0) = %q, want empty string", *got)
@@ -35,7 +35,7 @@ func TestNewID(t *testing.T) {
 
 		got = graphql.NewID(42)
 		if got == nil {
-			t.Error("NewID returned nil for integer 42")
+			t.Fatal("NewID returned nil for integer 42")
 		}
 		if *got != "42" {
 			t.Errorf("NewID(42) = %q, want \"42\"", *got)
@@ -68,4 +68,3 @@ func TestToID(t *testing.T) {
 		})
 	}
 }
-

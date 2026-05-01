@@ -303,7 +303,7 @@ func TestUnwrapToConcreteValue(t *testing.T) {
 		},
 		{
 			name:      "nil interface",
-			value:     reflect.ValueOf((any)(nil)),
+			value:     reflect.ValueOf(any(nil)),
 			wantValid: false,
 		},
 	}
@@ -521,6 +521,7 @@ func TestNewZeroOrPointerValue(t *testing.T) {
 			typ:      reflect.TypeOf((*int)(nil)),
 			wantKind: reflect.Ptr,
 			check: func(t *testing.T, v reflect.Value) {
+				t.Helper()
 				if v.IsNil() {
 					t.Error("expected non-nil pointer")
 				}
@@ -538,6 +539,7 @@ func TestNewZeroOrPointerValue(t *testing.T) {
 			typ:      reflect.TypeOf((*string)(nil)),
 			wantKind: reflect.Ptr,
 			check: func(t *testing.T, v reflect.Value) {
+				t.Helper()
 				if v.IsNil() {
 					t.Error("expected non-nil pointer")
 				}
@@ -555,6 +557,7 @@ func TestNewZeroOrPointerValue(t *testing.T) {
 			typ:      reflect.TypeOf((*struct{ X int })(nil)),
 			wantKind: reflect.Ptr,
 			check: func(t *testing.T, v reflect.Value) {
+				t.Helper()
 				if v.IsNil() {
 					t.Error("expected non-nil pointer")
 				}
@@ -572,6 +575,7 @@ func TestNewZeroOrPointerValue(t *testing.T) {
 			typ:      reflect.TypeOf(0),
 			wantKind: reflect.Int,
 			check: func(t *testing.T, v reflect.Value) {
+				t.Helper()
 				if v.Interface().(int) != 0 {
 					t.Errorf("int value = %v, want 0", v.Interface())
 				}
@@ -582,6 +586,7 @@ func TestNewZeroOrPointerValue(t *testing.T) {
 			typ:      reflect.TypeOf(""),
 			wantKind: reflect.String,
 			check: func(t *testing.T, v reflect.Value) {
+				t.Helper()
 				if v.Interface().(string) != "" {
 					t.Errorf("string value = %v, want empty string", v.Interface())
 				}
@@ -592,6 +597,7 @@ func TestNewZeroOrPointerValue(t *testing.T) {
 			typ:      reflect.TypeOf(false),
 			wantKind: reflect.Bool,
 			check: func(t *testing.T, v reflect.Value) {
+				t.Helper()
 				if v.Interface().(bool) != false {
 					t.Errorf("bool value = %v, want false", v.Interface())
 				}
@@ -602,6 +608,7 @@ func TestNewZeroOrPointerValue(t *testing.T) {
 			typ:      reflect.TypeOf(struct{ X int }{}),
 			wantKind: reflect.Struct,
 			check: func(t *testing.T, v reflect.Value) {
+				t.Helper()
 				s := v.Interface().(struct{ X int })
 				if s.X != 0 {
 					t.Errorf("struct field X = %v, want 0", s.X)
@@ -613,6 +620,7 @@ func TestNewZeroOrPointerValue(t *testing.T) {
 			typ:      reflect.TypeOf([]int{}),
 			wantKind: reflect.Slice,
 			check: func(t *testing.T, v reflect.Value) {
+				t.Helper()
 				if !v.IsNil() {
 					t.Error("expected nil slice")
 				}
@@ -623,6 +631,7 @@ func TestNewZeroOrPointerValue(t *testing.T) {
 			typ:      reflect.TypeOf(map[string]int{}),
 			wantKind: reflect.Map,
 			check: func(t *testing.T, v reflect.Value) {
+				t.Helper()
 				if !v.IsNil() {
 					t.Error("expected nil map")
 				}

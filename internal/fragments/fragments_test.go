@@ -9,9 +9,9 @@ import (
 
 func TestIsStructField(t *testing.T) {
 	tests := []struct {
-		name   string
-		tag    string
-		want   bool
+		name string
+		tag  string
+		want bool
 	}{
 		{
 			name: "valid fragment with typename",

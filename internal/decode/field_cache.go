@@ -53,7 +53,7 @@ type fieldLookupTable struct {
 func (t *fieldLookupTable) lookup(
 	v reflect.Value,
 	name string,
-) (idx int, scalar bool, ok bool) {
+) (idx int, scalar, ok bool) {
 	for i := range t.entries {
 		e := &t.entries[i]
 
@@ -120,7 +120,7 @@ func buildFieldLookupTable(t reflect.Type) *fieldLookupTable {
 		entries: make([]fieldEntry, 0, t.NumField()),
 	}
 
-	for i := 0; i < t.NumField(); i++ {
+	for i := range t.NumField() {
 		sf := t.Field(i)
 		if sf.PkgPath != "" {
 			// Unexported field — never a match target.

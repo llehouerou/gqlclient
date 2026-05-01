@@ -44,7 +44,7 @@ func queryArguments(variables any) string {
 // writeArgumentsFromMap writes GraphQL query arguments from a map of variables.
 // Keys are sorted alphabetically for deterministic output.
 func writeArgumentsFromMap(buf *bytes.Buffer, variables map[string]any) {
-	var keys []string
+	keys := make([]string, 0, len(variables))
 	for k := range variables {
 		keys = append(keys, k)
 	}
@@ -82,7 +82,7 @@ func collectStructFieldsForArguments(variables any) []argumentFieldInfo {
 	// Collect field information
 	var fields []argumentFieldInfo
 
-	for i := 0; i < val.NumField(); i++ {
+	for i := range val.NumField() {
 		field := typ.Field(i)
 
 		// Skip unexported fields
@@ -137,7 +137,6 @@ func writeArgumentsFromFields(buf *bytes.Buffer, fields []argumentFieldInfo) {
 // value indicates whether t is a value (required) type or pointer (optional) type.
 // If value is true, then "!" is written at the end of t.
 func writeArgumentType(w io.Writer, t reflect.Type, v any, value bool) {
-
 	if reflectutil.ImplementsGraphQLType(t) {
 		value = t.Kind() != reflect.Ptr
 		var typeName string

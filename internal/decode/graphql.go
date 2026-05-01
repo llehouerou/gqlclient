@@ -55,12 +55,12 @@ func UnmarshalGraphQL(data []byte, v any) error {
 		return err
 	}
 	tok, err := dec.Token()
-	switch err {
-	case io.EOF:
+	switch {
+	case errors.Is(err, io.EOF):
 		// Expect to get io.EOF. There shouldn't be any more
 		// tokens left after we've decoded v successfully.
 		return nil
-	case nil:
+	case err == nil:
 		return fmt.Errorf("invalid token '%v' after top-level value", tok)
 	default:
 		return err
@@ -112,14 +112,13 @@ func (d *decoder) decode() error {
 		var tok any
 		tok, err := d.tokenizer.Token()
 
-		if err == io.EOF {
+		if errors.Is(err, io.EOF) {
 			return errors.New("unexpected end of JSON input")
 		} else if err != nil {
 			return err
 		}
 
 		switch {
-
 		// Are we inside an object and seeing next key (rather than end of object)?
 		case d.state() == '{' && tok != json.Delim('}'):
 			key, ok := tok.(string)
@@ -172,7 +171,7 @@ func (d *decoder) decodeScalarValue(tok any) error {
 		}
 	}
 
-	for i := 0; i < d.vs.len(); i++ {
+	for i := range d.vs.len() {
 		v := d.vs.top(i)
 		if !v.IsValid() {
 			continue

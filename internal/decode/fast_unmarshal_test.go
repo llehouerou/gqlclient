@@ -19,10 +19,12 @@ func (c *customUnmarshaler) UnmarshalJSON(b []byte) error {
 	return nil
 }
 
-type namedString string
-type namedInt64 int64
-type namedUint8 uint8
-type namedFloat64 float64
+type (
+	namedString  string
+	namedInt64   int64
+	namedUint8   uint8
+	namedFloat64 float64
+)
 
 func addressableOf[T any](v T) reflect.Value {
 	return reflect.ValueOf(&v).Elem()

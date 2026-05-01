@@ -1011,8 +1011,7 @@ func TestQueryArguments_StructVariables(t *testing.T) {
 		},
 		{
 			name: "empty struct (should return empty string)",
-			in: struct {
-			}{},
+			in:   struct{}{},
 			want: "",
 		},
 		{
@@ -1214,7 +1213,6 @@ func (cth *customTypeHint) String() string {
 }
 
 func TestDynamicCustomType_GetGraphQLType(t *testing.T) {
-
 	type gqlGetRowsQuery struct {
 		GetRows struct {
 			Data []struct {
@@ -1573,6 +1571,7 @@ type Tests []Test
 func (t Tests) GetGraphQLType() string {
 	return "tests"
 }
+
 func TestInterface(t *testing.T) {
 	q := NewNestedQuery[Tests]("testcontainer")
 	want := `{testcontainer{tests{value}}}`

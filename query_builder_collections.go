@@ -40,7 +40,7 @@ func writeOrderedMapQuery(
 	}
 	sliceOfPairs := v
 	_, _ = io.WriteString(w, "{")
-	for i := 0; i < sliceOfPairs.Len(); i++ {
+	for i := range sliceOfPairs.Len() {
 		pair := sliceOfPairs.Index(i)
 		// it.Value() returns any, so we need to use reflect.ValueOf
 		// to cast it away

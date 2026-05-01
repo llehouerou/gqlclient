@@ -27,12 +27,13 @@ func ParseMixedCaps(name string) Name {
 	w, i := 0, 0 // Index of start of word, scan.
 	for i+1 <= len(runes) {
 		eow := false // Whether we hit the end of a word.
-		if i+1 == len(runes) {
+		switch {
+		case i+1 == len(runes):
 			eow = true
-		} else if unicode.IsLower(runes[i]) && unicode.IsUpper(runes[i+1]) {
+		case unicode.IsLower(runes[i]) && unicode.IsUpper(runes[i+1]):
 			// lower -> Upper.
 			eow = true
-		} else if i+2 < len(runes) && unicode.IsUpper(runes[i]) && unicode.IsUpper(runes[i+1]) && unicode.IsLower(runes[i+2]) {
+		case i+2 < len(runes) && unicode.IsUpper(runes[i]) && unicode.IsUpper(runes[i+1]) && unicode.IsLower(runes[i+2]):
 			// Upper -> Upper,lower. End of acronym, followed by a word.
 			eow = true
 

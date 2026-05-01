@@ -90,7 +90,6 @@ func TestUnmarshalGraphQL_jsonRawTag(t *testing.T) {
 		"Data": { "foo":"bar" },
 		"Another" : "stuff"
         }`), &got)
-
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -120,7 +119,6 @@ func TestUnmarshalGraphQL_fieldAsScalar(t *testing.T) {
                     "keyB": 3
                 }
         }`), &got)
-
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -183,7 +181,6 @@ func TestUnmarshalGraphQL_orderedMapWithPointers(t *testing.T) {
 			"id": "2"
 		}
 	}`), &got)
-
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -261,7 +258,7 @@ func TestUnmarshalGraphQL_array(t *testing.T) {
 // When unmarshaling into an array, its initial value should be overwritten
 // (rather than appended to).
 func TestUnmarshalGraphQL_arrayReset(t *testing.T) {
-	var got = []string{"initial"}
+	got := []string{"initial"}
 	err := decode.UnmarshalGraphQL([]byte(`["bar", "baz"]`), &got)
 	if err != nil {
 		t.Fatal(err)
@@ -1285,7 +1282,6 @@ func TestUnmarshalGraphQL_pointerToSlice(t *testing.T) {
 		err := decode.UnmarshalGraphQL([]byte(`{
 			"items": ["a", "b", "c"]
 		}`), &got)
-
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -1304,7 +1300,6 @@ func TestUnmarshalGraphQL_pointerToSlice(t *testing.T) {
 		err := decode.UnmarshalGraphQL([]byte(`{
 			"items": ["new1", "new2"]
 		}`), &got)
-
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -1323,7 +1318,6 @@ func TestUnmarshalGraphQL_pointerToSlice(t *testing.T) {
 		err := decode.UnmarshalGraphQL([]byte(`{
 			"items": null
 		}`), &got)
-
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -1397,7 +1391,6 @@ func TestUnmarshalGraphQL_fragmentTypeEdgeCase(t *testing.T) {
 			}
 		}
 	}`), &got)
-
 	if err != nil {
 		t.Fatalf("got error: %v, want: nil", err)
 	}
@@ -1439,7 +1432,6 @@ func TestUnmarshalGraphQL_extractFragmentTypenameInvalid(t *testing.T) {
 			"login": "test"
 		}
 	}`), &got)
-
 	if err != nil {
 		t.Fatalf("got error: %v, want: nil", err)
 	}
@@ -1472,7 +1464,6 @@ func TestUnmarshalGraphQL_fragmentWithNonMatchingTypename(t *testing.T) {
 			"__typename": "Admin"
 		}
 	}`), &got)
-
 	if err != nil {
 		t.Fatalf("got error: %v, want: nil", err)
 	}
@@ -1520,7 +1511,6 @@ func TestUnmarshalGraphQL_nestedFragmentsWithTypename(t *testing.T) {
 			}
 		}
 	}`), &got)
-
 	if err != nil {
 		t.Fatalf("got error: %v, want: nil", err)
 	}
@@ -1567,7 +1557,6 @@ func TestUnmarshalGraphQL_orderedMapWithMultipleFragments(t *testing.T) {
 			"user2": {"name": "bob", "id": "2"}
 		}
 	}`), &got)
-
 	if err != nil {
 		t.Fatalf("got error: %v, want: nil", err)
 	}
@@ -1643,7 +1632,6 @@ func TestUnmarshalGraphQL_recursiveStructWithFragments(t *testing.T) {
 			}
 		}
 	}`), &got)
-
 	if err != nil {
 		t.Fatalf("got error: %v, want: nil", err)
 	}
