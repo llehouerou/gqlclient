@@ -5,7 +5,9 @@ type OptionType string
 
 const (
 	// optionTypeOperationName is private because it's option is built-in and unique
-	optionTypeOperationName      OptionType = "operation_name"
+	optionTypeOperationName OptionType = "operation_name"
+	// OptionTypeOperationDirective is the OptionType for an Option that
+	// renders a GraphQL operation-level directive (e.g. "@skip(if: $cond)").
 	OptionTypeOperationDirective OptionType = "operation_directive"
 )
 

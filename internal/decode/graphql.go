@@ -1,5 +1,10 @@
-// Package jsonutil provides a function for decoding JSON
-// into a GraphQL query data structure.
+// Package decode provides a custom JSON decoder for GraphQL query responses.
+//
+// UnmarshalGraphQL extends the standard encoding/json semantics with the
+// patterns needed by the gqlclient library: inline fragments dispatched on
+// __typename, embedded structs as fragments, ordered maps ([][2]any) as
+// alternative storage to struct fields, and transparent unwrapping of types
+// that implement types.GraphQLWrapper.
 package decode
 
 import (
