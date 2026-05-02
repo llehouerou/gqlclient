@@ -1,0 +1,114 @@
+name: CI
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+    branches: [master]
+
+permissions:
+  contents: read
+
+# Cancel in-progress PR runs when new commits land; never cancel master runs.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  # Lint and Linux tests run inside the project's Nix dev shell so the
+  # toolchain (Go, golangci-lint, golines, ...) matches what developers
+  # use locally. The pin lives in flake.lock — bumping it updates dev
+  # and CI together.
+  lint:
+    name: Lint (Nix)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Nix
+        uses: DeterminateSystems/nix-installer-action@main
+
+      - name: Cache Nix store
+        uses: DeterminateSystems/magic-nix-cache-action@main
+
+      - name: golangci-lint
+        run: nix develop --command golangci-lint run --timeout=10m
+
+  tidy:
+    name: go mod tidy (Nix)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Nix
+        uses: DeterminateSystems/nix-installer-action@main
+
+      - name: Cache Nix store
+        uses: DeterminateSystems/magic-nix-cache-action@main
+
+      - name: Verify go.mod and go.sum are tidy
+        run: |
+          nix develop --command go mod tidy
+          if [[ -n "$(git status --porcelain go.mod go.sum)" ]]; then
+            echo "::error::go.mod or go.sum is not tidy. Run 'go mod tidy' and commit the result."
+            git --no-pager diff -- go.mod go.sum
+            exit 1
+          fi
+
+  test-linux:
+    name: Test (Linux / Nix)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Nix
+        uses: DeterminateSystems/nix-installer-action@main
+
+      - name: Cache Nix store
+        uses: DeterminateSystems/magic-nix-cache-action@main
+
+      - name: Build
+        run: nix develop --command go build ./...
+
+      - name: Test (race + coverage)
+        # Override the dev-shell default of CGO_ENABLED=0; -race needs cgo.
+        run: |
+          nix develop --command bash -c '
+            export CGO_ENABLED=1
+            go test -race -coverprofile=coverage.out -covermode=atomic ./...
+          '
+
+      - name: Upload coverage
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage
+          path: coverage.out
+          if-no-files-found: error
+          retention-days: 7
+
+  # macOS and Windows tests use setup-go: the flake is Linux-only, and
+  # these jobs exist to catch platform-specific bugs (path handling,
+  # HTTP timer behavior, gzip Reader edge cases). The toolchain version
+  # comes from go.mod so it stays in sync with the flake.
+  test-cross:
+    name: Test (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [macos-latest, windows-latest]
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+          check-latest: true
+
+      - name: Build
+        run: go build ./...
+
+      - name: Test (with race detector)
+        run: go test -race ./...
+        env:
+          CGO_ENABLED: "1"

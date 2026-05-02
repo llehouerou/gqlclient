@@ -8,32 +8,47 @@
   outputs =
     { nixpkgs, ... }:
     let
-      system = "x86_64-linux";
-      pkgs = nixpkgs.legacyPackages.${system};
+      systems = [
+        "x86_64-linux"
+        "aarch64-linux"
+        "x86_64-darwin"
+        "aarch64-darwin"
+      ];
+      forAllSystems = nixpkgs.lib.genAttrs systems;
     in
     {
-      devShells.${system}.default = pkgs.mkShell {
-        buildInputs = with pkgs; [
-          # Go toolchain
-          go
-          gopls
-          golines
-          goimports-reviser
-          golangci-lint
-          delve
+      devShells = forAllSystems (
+        system:
+        let
+          pkgs = nixpkgs.legacyPackages.${system};
+        in
+        {
+          default = pkgs.mkShell {
+            buildInputs = with pkgs; [
+              # Go toolchain
+              go
+              gopls
+              golines
+              goimports-reviser
+              golangci-lint
+              delve
 
-          # Build tools
-          gnumake
+              # Build tools
+              gnumake
 
-          # Nix
-          nil # Nix language server
-        ];
+              # Nix
+              nil # Nix language server
+            ];
 
-        shellHook = ''
-          export GOPATH="$HOME/go"
-          export PATH="$GOPATH/bin:$PATH"
-          export CGO_ENABLED=0
-        '';
-      };
+            shellHook = ''
+              export GOPATH="$HOME/go"
+              export PATH="$GOPATH/bin:$PATH"
+              # Default to CGO off; override (CGO_ENABLED=1) when running
+              # the race detector or anything else that needs cgo.
+              export CGO_ENABLED=0
+            '';
+          };
+        }
+      );
     };
 }
