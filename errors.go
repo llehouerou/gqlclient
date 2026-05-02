@@ -10,8 +10,8 @@ import (
 // Error codes used throughout the client.
 const (
 	ErrRequestError  = "request_error"
-	ErrJsonEncode    = "json_encode_error"
-	ErrJsonDecode    = "json_decode_error"
+	ErrJSONEncode    = "json_encode_error"
+	ErrJSONDecode    = "json_decode_error"
 	ErrGraphQLEncode = "graphql_encode_error"
 	ErrGraphQLDecode = "graphql_decode_error"
 )
@@ -160,7 +160,7 @@ func newSimpleErrors(code string, err error) Errors {
 // newJSONDecodeError creates an error for JSON decoding failures.
 // Used when the HTTP response body cannot be parsed as valid JSON.
 func newJSONDecodeError(err error) Error {
-	return newError(ErrJsonDecode, err)
+	return newError(ErrJSONDecode, err)
 }
 
 // newGraphQLDecodeError creates an error for GraphQL response unmarshaling failures.

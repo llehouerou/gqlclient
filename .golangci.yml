@@ -166,6 +166,23 @@ linters:
           - noctx
           - unparam
           - errcheck
+          # Test-side: type-asserting on errors is part of the assertion.
+          - errorlint
+          # Test parallelism is a project-wide decision tracked separately;
+          # see TODO in CONTRIBUTING.md when added.
+          - paralleltest
+
+      # Test-only revive findings: cosmetic naming, bool literals, etc.
+      # Production exports stay under the full revive ruleset.
+      - path: _test\.go
+        linters: [revive]
+        text: "var-naming|struct-tag|var-declaration|bool-literal-in-expr|confusing-naming"
+
+      # Test-only naming convention findings (staticcheck counterpart to
+      # revive's var-naming). Production exports stay covered.
+      - path: _test\.go
+        linters: [staticcheck]
+        text: "ST1003"
 
       # Internal decoder is intentionally complex; cap higher.
       - path: internal/decode/

@@ -1197,8 +1197,8 @@ func TestClient_decorateError(t *testing.T) {
 		}
 
 		// Check error code
-		if code := errs[0].GetCode(); code != graphql.ErrJsonDecode {
-			t.Errorf("expected error code %q, got %q", graphql.ErrJsonDecode, code)
+		if code := errs[0].GetCode(); code != graphql.ErrJSONDecode {
+			t.Errorf("expected error code %q, got %q", graphql.ErrJSONDecode, code)
 		}
 
 		// Check error message mentions the read error
@@ -1244,7 +1244,7 @@ func TestClient_newRequestError(t *testing.T) {
 		client := graphql.NewClient("http://example.com", nil)
 
 		err := client.NewRequestError(
-			graphql.ErrJsonDecode,
+			graphql.ErrJSONDecode,
 			errors.New("json decode failed"),
 			nil,
 			nil,
@@ -1257,8 +1257,8 @@ func TestClient_newRequestError(t *testing.T) {
 		}
 
 		if code, ok := err.Extensions["code"].(string); !ok ||
-			code != graphql.ErrJsonDecode {
-			t.Errorf("expected code %q, got %v", graphql.ErrJsonDecode, code)
+			code != graphql.ErrJSONDecode {
+			t.Errorf("expected code %q, got %v", graphql.ErrJSONDecode, code)
 		}
 	})
 
@@ -1913,8 +1913,8 @@ func TestClient_executeRequest(t *testing.T) {
 		}
 
 		// Check error code
-		if code := errs[0].GetCode(); code != graphql.ErrJsonDecode {
-			t.Errorf("expected error code %q, got %q", graphql.ErrJsonDecode, code)
+		if code := errs[0].GetCode(); code != graphql.ErrJSONDecode {
+			t.Errorf("expected error code %q, got %q", graphql.ErrJSONDecode, code)
 		}
 
 		// Check error message contains gzip-related text
@@ -2036,8 +2036,8 @@ func TestClient_decodeResponse(t *testing.T) {
 		}
 
 		if code, ok := errs[0].Extensions["code"].(string); !ok ||
-			code != graphql.ErrJsonDecode {
-			t.Errorf("expected error code %q, got %v", graphql.ErrJsonDecode, code)
+			code != graphql.ErrJSONDecode {
+			t.Errorf("expected error code %q, got %v", graphql.ErrJSONDecode, code)
 		}
 	})
 }

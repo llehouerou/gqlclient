@@ -2,6 +2,16 @@
 
 All notable changes to this project are documented in this file.
 
+## Unreleased
+
+### Breaking changes
+
+- Renamed exported error-code constants `ErrJsonEncode` and `ErrJsonDecode`
+  to `ErrJSONEncode` and `ErrJSONDecode` to match Go naming conventions
+  (initialisms in upper case). Callers comparing `err.GetCode()` against
+  these constants must update the references. No behavior change beyond
+  the rename.
+
 ## v0.15.1
 
 ### Fixes

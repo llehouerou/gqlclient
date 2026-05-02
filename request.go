@@ -96,7 +96,7 @@ func (c *Client) request(
 	request, reqBody, err := c.BuildRequest(ctx, query, variables)
 	if err != nil {
 		e := c.NewRequestError(
-			ErrJsonEncode,
+			ErrJSONEncode,
 			fmt.Errorf("problem constructing request: %w", err),
 			request,
 			nil,
@@ -162,11 +162,11 @@ func (c *Client) request(
 
 	// Handle JSON decode errors
 	if len(gqlErrors) > 0 {
-		// Check if it's a decode error (has ErrJsonDecode code)
+		// Check if it's a decode error (has ErrJSONDecode code)
 		if code, ok := gqlErrors[0].Extensions["code"].(string); ok &&
-			code == ErrJsonDecode {
+			code == ErrJSONDecode {
 			we := c.NewRequestError(
-				ErrJsonDecode,
+				ErrJSONDecode,
 				fmt.Errorf("%s", gqlErrors[0].Message),
 				request,
 				resp,

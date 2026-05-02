@@ -54,16 +54,14 @@ func (d *decoder) decodeObjectKey(
 
 // findFieldsForKey discovers fields matching the given key across all value stacks.
 // It returns:
-// - fields: slice of fieldInfo (one per stack)
-// - hasMatchingFragmentWithField: whether any matching fragment has the field
-// - rawMessage: whether any field is of json.RawMessage type
+//   - fields: slice of fieldInfo (one per stack)
+//   - hasMatchingFragmentWithField: whether any matching fragment has the field
+//   - rawMessage: whether any field is of json.RawMessage type
 func (d *decoder) findFieldsForKey(
 	key string,
 	rawMessageValue reflect.Value,
-) ([]fieldInfo, bool, bool) {
-	fields := make([]fieldInfo, d.vs.len())
-	hasMatchingFragmentWithField := false
-	rawMessage := false
+) (fields []fieldInfo, hasMatchingFragmentWithField, rawMessage bool) {
+	fields = make([]fieldInfo, d.vs.len())
 
 	for i := range d.vs.len() {
 		v := d.vs.top(i)

@@ -41,13 +41,12 @@ func processStructField(
 			return fieldOutput{shouldSkip: true}
 		}
 		typeName, typeok := reflectutil.GetGraphQLType(fieldValue, f.Type)
-		if typeok {
-			value = typeName
-			ok = true
-		} else {
+		if !typeok {
 			// Skip this field if the concrete value is a nil pointer
 			return fieldOutput{shouldSkip: true}
 		}
+		value = typeName
+		ok = true
 	} else if f.Type.Kind() == reflect.Slice &&
 		reflectutil.ImplementsGraphQLType(f.Type.Elem()) {
 		// For slices, check if the element type implements GraphQLType

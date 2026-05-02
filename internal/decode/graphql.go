@@ -104,11 +104,12 @@ func (d *decoder) Decode(v any) error {
 		values:        []stack{{rv.Elem()}},
 		fragmentTypes: []string{""}, // Root is not a fragment
 	}
-	return d.decode()
+	return d.decodeLoop()
 }
 
-// decode decodes a single JSON value from d.tokenizer into d.vs.
-func (d *decoder) decode() error {
+// decodeLoop drives the tokenizer until d.vs is empty, dispatching tokens
+// to the per-shape handlers. Decode initializes d.vs and delegates here.
+func (d *decoder) decodeLoop() error {
 	rawMessageValue := reflect.ValueOf(json.RawMessage{})
 
 	// The loop invariant is that the top of each d.vs stack

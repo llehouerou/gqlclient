@@ -174,7 +174,7 @@ func isInitialism(word string) (string, bool) {
 }
 
 // isTwoInitialisms reports whether word is two initialisms.
-func isTwoInitialisms(word string) (string, string, bool) {
+func isTwoInitialisms(word string) (first, second string, ok bool) {
 	word = strings.ToUpper(word)
 	for i := minInitialismLength; i <= len(word)-minInitialismLength; i++ {
 		_, ok1 := initialisms[word[:i]]
