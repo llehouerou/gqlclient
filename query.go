@@ -119,4 +119,3 @@ func ConstructMutation(
 ) (string, error) {
 	return constructOperation("mutation", v, variables, true, options...)
 }
-

@@ -1,6 +1,11 @@
 gqlclient
 =========
 
+[![CI](https://github.com/llehouerou/gqlclient/actions/workflows/ci.yml/badge.svg)](https://github.com/llehouerou/gqlclient/actions/workflows/ci.yml)
+[![Go Reference](https://pkg.go.dev/badge/github.com/llehouerou/gqlclient.svg)](https://pkg.go.dev/github.com/llehouerou/gqlclient)
+[![Go Report Card](https://goreportcard.com/badge/github.com/llehouerou/gqlclient)](https://goreportcard.com/report/github.com/llehouerou/gqlclient)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+
 ## About This Project
 
 This project is a fork of [`github.com/hasura/go-graphql-client`](https://github.com/hasura/go-graphql-client), which itself was originally forked from [`github.com/shurcooL/graphql`](https://github.com/shurcooL/graphql).
