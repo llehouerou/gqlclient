@@ -184,6 +184,12 @@ linters:
         linters: [staticcheck]
         text: "ST1003"
 
+      # Example_* funcs in example_test.go are intentionally illustrative,
+      # not runnable: they target a fictitious endpoint to keep the godoc
+      # snippet readable. testableexamples wants an // Output: marker.
+      - path: example_test\.go
+        linters: [testableexamples]
+
       # Internal decoder is intentionally complex; cap higher.
       - path: internal/decode/
         linters: [gocyclo]

@@ -4,6 +4,16 @@ All notable changes to this project are documented in this file.
 
 ## Unreleased
 
+### Additions
+
+- `Client.WithHTTPClient`, `WithHeader`, `WithHeaders`, `WithUserAgent` —
+  ergonomic helpers for the common transport-customization cases that
+  previously required wrapping `WithRequestModifier`. All follow the
+  existing immutable pattern and are composable. `WithHeader(s)` apply
+  before `WithRequestModifier`, so a modifier can still override.
+- Runnable godoc examples in `example_test.go` (visible on pkg.go.dev)
+  for `NewClient`, `Query`, and each `With*` method.
+
 ### Breaking changes
 
 - Renamed exported error-code constants `ErrJsonEncode` and `ErrJsonDecode`

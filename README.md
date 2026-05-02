@@ -68,20 +68,47 @@ client := graphql.NewClient("https://example.com/graphql", nil)
 
 ### Authentication
 
-Some GraphQL servers may require authentication. The `graphql` package does not directly handle authentication. Instead, when creating a new client, you're expected to pass an `http.Client` that performs authentication. The easiest and recommended way to do this is to use the [`golang.org/x/oauth2`](https://golang.org/x/oauth2) package. You'll need an OAuth token with the right scopes. Then:
+For a static bearer token, the simplest path is `WithHeader`:
+
+```Go
+client := graphql.NewClient("https://example.com/graphql", nil).
+    WithHeader("Authorization", "Bearer "+os.Getenv("GRAPHQL_TOKEN"))
+```
+
+For tokens that rotate (OAuth2 refresh, OIDC, signed AWS requests), pass an `*http.Client` that handles auth at the transport layer. The standard library and `golang.org/x/oauth2` give you everything you need:
 
 ```Go
 import "golang.org/x/oauth2"
 
-func main() {
-	src := oauth2.StaticTokenSource(
-		&oauth2.Token{AccessToken: os.Getenv("GRAPHQL_TOKEN")},
-	)
-	httpClient := oauth2.NewClient(context.Background(), src)
+src := oauth2.StaticTokenSource(
+    &oauth2.Token{AccessToken: os.Getenv("GRAPHQL_TOKEN")},
+)
+httpClient := oauth2.NewClient(context.Background(), src)
 
-	client := graphql.NewClient("https://example.com/graphql", httpClient)
-	// Use client...
+client := graphql.NewClient("https://example.com/graphql", httpClient)
 ```
+
+For per-request headers (correlation IDs, traceparent), use `WithRequestModifier`:
+
+```Go
+client := graphql.NewClient("https://example.com/graphql", nil).
+    WithRequestModifier(func(r *http.Request) {
+        r.Header.Set("X-Request-ID", newRequestID())
+    })
+```
+
+#### Other client options
+
+| Method | Purpose |
+| --- | --- |
+| `WithHTTPClient(*http.Client)` | Replace the underlying HTTP client (timeouts, TLS, proxy, instrumented round trippers). |
+| `WithHeader(key, value)` | Add a single header to every request. Last write wins for the same key. |
+| `WithHeaders(http.Header)` | Bulk merge headers into the client. Existing keys are overwritten. |
+| `WithUserAgent(string)` | Convenience for `WithHeader("User-Agent", …)`. |
+| `WithRequestModifier(func(*http.Request))` | Escape hatch for per-request mutation; runs after `WithHeader(s)` so it can override. |
+| `WithDebug(bool)` | Enrich errors with the originating request/response payloads. |
+
+All `With*` methods return a new `Client`, so the original is safe to share across goroutines.
 
 ### Simple Query
 

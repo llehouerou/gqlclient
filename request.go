@@ -46,6 +46,14 @@ func (c *Client) BuildRequest(
 	}
 	request.Header.Add("Content-Type", "application/json")
 
+	// Apply client-level headers before the request modifier so that the
+	// modifier can override them when it needs to.
+	for k, vs := range c.headers {
+		for _, v := range vs {
+			request.Header.Set(k, v)
+		}
+	}
+
 	if c.requestModifier != nil {
 		c.requestModifier(request)
 	}

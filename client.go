@@ -32,6 +32,7 @@ type RequestModifier func(*http.Request)
 type Client struct {
 	url             string // GraphQL server URL.
 	httpClient      *http.Client
+	headers         http.Header // applied before requestModifier
 	requestModifier RequestModifier
 	debug           bool
 }
@@ -43,9 +44,8 @@ func NewClient(url string, httpClient *http.Client) *Client {
 		httpClient = http.DefaultClient
 	}
 	return &Client{
-		url:             url,
-		httpClient:      httpClient,
-		requestModifier: nil,
+		url:        url,
+		httpClient: httpClient,
 	}
 }
 
@@ -149,9 +149,25 @@ func (c *Client) clone() *Client {
 	return &Client{
 		url:             c.url,
 		httpClient:      c.httpClient,
+		headers:         cloneHeader(c.headers),
 		requestModifier: c.requestModifier,
 		debug:           c.debug,
 	}
+}
+
+// cloneHeader returns a deep copy of h, or nil if h is nil. Used by clone()
+// so With* methods don't mutate the original Client's header set.
+func cloneHeader(h http.Header) http.Header {
+	if h == nil {
+		return nil
+	}
+	out := make(http.Header, len(h))
+	for k, v := range h {
+		vs := make([]string, len(v))
+		copy(vs, v)
+		out[k] = vs
+	}
+	return out
 }
 
 // WithRequestModifier returns a new Client with the request modifier set.
@@ -172,6 +188,75 @@ func (c *Client) WithRequestModifier(f RequestModifier) *Client {
 	clone := c.clone()
 	clone.requestModifier = f
 	return clone
+}
+
+// WithHTTPClient returns a new Client that uses the given *http.Client for
+// transport. Use this to inject custom timeouts, proxy settings, TLS
+// configuration, or instrumented round trippers.
+//
+// If hc is nil, http.DefaultClient is used (matching NewClient's behavior).
+//
+// This method follows an immutable pattern: it returns a new Client instance
+// without modifying the receiver.
+func (c *Client) WithHTTPClient(hc *http.Client) *Client {
+	if hc == nil {
+		hc = http.DefaultClient
+	}
+	clone := c.clone()
+	clone.httpClient = hc
+	return clone
+}
+
+// WithHeader returns a new Client that sends the given header on every
+// request. Calling WithHeader for the same key replaces the previous value.
+//
+// Headers configured this way are applied before any RequestModifier set via
+// WithRequestModifier, so a modifier can override them when needed.
+//
+// This method follows an immutable pattern: it returns a new Client instance
+// without modifying the receiver.
+func (c *Client) WithHeader(key, value string) *Client {
+	clone := c.clone()
+	if clone.headers == nil {
+		clone.headers = make(http.Header)
+	}
+	clone.headers.Set(key, value)
+	return clone
+}
+
+// WithHeaders returns a new Client whose every request includes the given
+// headers. Keys present in h overwrite the client's existing values for
+// those keys; keys not present are preserved.
+//
+// To replace the entire header set, call this on a fresh client. To clear
+// headers, pass an empty (non-nil) http.Header to a fresh client; passing
+// nil leaves the existing set untouched.
+//
+// Headers configured this way are applied before any RequestModifier set via
+// WithRequestModifier.
+//
+// This method follows an immutable pattern: it returns a new Client instance
+// without modifying the receiver.
+func (c *Client) WithHeaders(h http.Header) *Client {
+	clone := c.clone()
+	if h == nil {
+		return clone
+	}
+	if clone.headers == nil {
+		clone.headers = make(http.Header, len(h))
+	}
+	for k, vs := range h {
+		clone.headers[k] = append(clone.headers[k][:0], vs...)
+	}
+	return clone
+}
+
+// WithUserAgent is a convenience for WithHeader("User-Agent", ua).
+//
+// This method follows an immutable pattern: it returns a new Client instance
+// without modifying the receiver.
+func (c *Client) WithUserAgent(ua string) *Client {
+	return c.WithHeader("User-Agent", ua)
 }
 
 // WithDebug returns a new Client with debug mode enabled or disabled.
