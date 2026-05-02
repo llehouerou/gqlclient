@@ -2,28 +2,73 @@
 
 All notable changes to this project are documented in this file.
 
-## Unreleased
+## v0.16.0 (2026-05-02)
+
+This release adds typed sentinel errors and ergonomic transport helpers
+on top of the existing immutable-Client pattern. There are breaking
+changes in the error-code constants — see the migration table below.
+
+### Breaking changes
+
+- Renamed the exported error-code string constants to use an `ErrCode`
+  prefix, freeing up the short names for typed sentinel error values:
+
+  | v0.15.x             | v0.16.0                  |
+  | ------------------- | ------------------------ |
+  | `ErrRequestError`   | `ErrCodeRequest`         |
+  | `ErrJsonEncode`     | `ErrCodeJSONEncode`      |
+  | `ErrJsonDecode`     | `ErrCodeJSONDecode`      |
+  | `ErrGraphQLEncode`  | `ErrCodeGraphQLEncode`   |
+  | `ErrGraphQLDecode`  | `ErrCodeGraphQLDecode`   |
+
+  Callers comparing `err.GetCode()` against the old constants should
+  update to the `ErrCode*` form, or — preferably — switch to
+  `errors.Is(err, gqlclient.ErrJSONDecode)` and friends (see
+  Additions). The string values stored in `Error.Extensions["code"]`
+  are unchanged.
+
+- Removed the exported `ConstructSubscription` function. It built a
+  GraphQL subscription string but had no transport behind it (the
+  fork is HTTP-only by design). No replacement is needed.
 
 ### Additions
 
-- `Client.WithHTTPClient`, `WithHeader`, `WithHeaders`, `WithUserAgent` —
-  ergonomic helpers for the common transport-customization cases that
-  previously required wrapping `WithRequestModifier`. All follow the
-  existing immutable pattern and are composable. `WithHeader(s)` apply
-  before `WithRequestModifier`, so a modifier can still override.
-- Runnable godoc examples in `example_test.go` (visible on pkg.go.dev)
-  for `NewClient`, `Query`, and each `With*` method.
-- `FuzzUnmarshalGraphQL` (in `internal/decode`) — coverage-guided fuzz
-  test for the custom JSON decoder, exercising struct, fragment, and
-  ordered-map targets. Run with
+- **Typed sentinel errors and `errors.Is`/`errors.As` support.**
+  `ErrRequest`, `ErrJSONEncode`, `ErrJSONDecode`, `ErrGraphQLEncode`,
+  `ErrGraphQLDecode` are now sentinel `error` values. `Errors` and
+  `Error` implement `Is` / `Unwrap` (both single and multi), so the
+  standard error-inspection patterns just work:
+
+  ```go
+  if err := client.Query(ctx, &q, nil); err != nil {
+      switch {
+      case errors.Is(err, gqlclient.ErrJSONDecode):
+          // server returned non-JSON or malformed JSON
+      case errors.Is(err, gqlclient.ErrRequest):
+          // HTTP transport / non-200 status
+      default:
+          var gqlErrs gqlclient.Errors
+          _ = errors.As(err, &gqlErrs) // server-level errors
+      }
+  }
+  ```
+
+  Locally generated errors also expose their cause via `Unwrap()` —
+  e.g. recovering a `*json.SyntaxError` behind an `ErrJSONDecode`.
+
+- **Ergonomic transport helpers:** `Client.WithHTTPClient`,
+  `WithHeader`, `WithHeaders`, `WithUserAgent`. All follow the
+  existing immutable pattern and are composable. `WithHeader(s)`
+  apply before any `RequestModifier`, so a modifier can still
+  override.
+
+- **Runnable godoc examples** in `example_test.go` (visible on
+  pkg.go.dev) for `NewClient`, `Query`, and each `With*` method.
+
+- **`FuzzUnmarshalGraphQL`** in `internal/decode` — coverage-guided
+  fuzz test for the custom JSON decoder, exercising struct,
+  fragment, and ordered-map targets. Run on demand with
   `go test ./internal/decode -fuzz=FuzzUnmarshalGraphQL -fuzztime=30s`.
-- Sentinel error values `ErrRequest`, `ErrJSONEncode`, `ErrJSONDecode`,
-  `ErrGraphQLEncode`, `ErrGraphQLDecode` for use with `errors.Is`.
-  `Errors` and `Error` now implement `Is` / `Unwrap` (single and
-  multi), so `errors.As(err, &gqlclient.Errors{})` and
-  `errors.As(err, &single)` recover the underlying values; locally
-  generated errors also expose their cause via `Unwrap()` (e.g.
-  recovering a `*json.SyntaxError` behind an `ErrJSONDecode`).
 
 ### Internal
 
@@ -31,26 +76,16 @@ All notable changes to this project are documented in this file.
   suite was audited for shared mutable state (no `t.Setenv`, no
   package-level test mutation, all fixtures read-only) and confirmed
   safe to parallelize. Wall-clock test time drops accordingly.
-
-### Breaking changes
-
-- Renamed exported error-code constants to `ErrCode*` to free up the
-  base names for typed sentinel errors. Specifically:
-    - `ErrRequestError` → `ErrCodeRequest`
-    - `ErrJsonEncode` → `ErrCodeJSONEncode`
-    - `ErrJsonDecode` → `ErrCodeJSONDecode`
-    - `ErrGraphQLEncode` → `ErrCodeGraphQLEncode`
-    - `ErrGraphQLDecode` → `ErrCodeGraphQLDecode`
-  The new short names (`ErrRequest`, `ErrJSONEncode`, ...) are now
-  sentinel `error` values usable with `errors.Is`. Callers comparing
-  `err.GetCode()` against the old string constants need to update to
-  the `ErrCode*` form, or — preferably — switch to
-  `errors.Is(err, ErrJSONDecode)` and friends.
-- Removed the exported `ConstructSubscription` function. It built a
-  GraphQL subscription string but the library has no transport to
-  execute one (subscription support was deliberately removed in the fork
-  — see README). Callers in the wild are not expected; the function had
-  no executable counterpart on `Client`.
+- Strict `golangci-lint` v2 baseline introduced earlier in the cycle
+  is now load-bearing across the codebase: every error suppression
+  is either an annotated `//nolint` with reason or a function on the
+  exclude list (`*bytes.Buffer.Write*`, `*strings.Builder.Write*`)
+  documented to never error.
+- GitHub Actions CI (Linux via Nix dev shell, macOS, Windows) plus
+  `dependabot` on `gomod` and `github-actions`. `master` is now a
+  protected branch (no force-push, no deletion, linear history).
+- Governance: `CONTRIBUTING.md`, `SECURITY.md`, package-level
+  `doc.go` for pkg.go.dev rendering.
 
 ## v0.15.1
 
