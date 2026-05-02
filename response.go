@@ -31,7 +31,7 @@ func handleGzipResponse(
 // copyResponseForDebug reads the entire response body into memory
 // and returns both the bytes and a reader positioned at the start.
 // This allows the response to be decoded while preserving a copy for debug logging.
-func copyResponseForDebug(r io.Reader) ([]byte, io.Reader, error) {
+func copyResponseForDebug(r io.Reader) ([]byte, *bytes.Reader, error) {
 	respBody, err := io.ReadAll(r)
 	if err != nil {
 		return nil, nil, err

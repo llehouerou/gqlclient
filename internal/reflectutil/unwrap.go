@@ -127,7 +127,7 @@ var hasGraphQLWrappedMethodCache sync.Map // map[reflect.Type]bool
 // Result is cached per reflect.Type.
 func hasGraphQLWrappedMethod(t reflect.Type) bool {
 	if cached, ok := hasGraphQLWrappedMethodCache.Load(t); ok {
-		return cached.(bool)
+		return cached.(bool) //nolint:errcheck // hasGraphQLWrappedMethodCache only ever stores bool
 	}
 	has := reflect.Zero(t).MethodByName(WrapperMethodName).IsValid()
 	hasGraphQLWrappedMethodCache.Store(t, has)
@@ -298,7 +298,7 @@ var implementsGraphQLTypeCache sync.Map // map[reflect.Type]bool
 // type name via GetGraphQLType().
 func ImplementsGraphQLType(t reflect.Type) bool {
 	if cached, ok := implementsGraphQLTypeCache.Load(t); ok {
-		return cached.(bool)
+		return cached.(bool) //nolint:errcheck // implementsGraphQLTypeCache only ever stores bool
 	}
 	result := t.Implements(types.GraphqlTypeInterface)
 	implementsGraphQLTypeCache.Store(t, result)

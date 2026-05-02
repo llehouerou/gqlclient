@@ -31,7 +31,7 @@ var jsonUnmarshalerCache sync.Map // map[reflect.Type]bool
 
 func implementsJSONUnmarshaler(t reflect.Type) bool {
 	if cached, ok := jsonUnmarshalerCache.Load(t); ok {
-		return cached.(bool)
+		return cached.(bool) //nolint:errcheck // jsonUnmarshalerCache only ever stores bool
 	}
 	has := t.Implements(jsonUnmarshalerType) ||
 		reflect.PointerTo(t).Implements(jsonUnmarshalerType)

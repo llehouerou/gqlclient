@@ -105,11 +105,11 @@ var fieldLookupCache sync.Map // map[reflect.Type]*fieldLookupTable
 // t, building it on first encounter.
 func lookupFieldTable(t reflect.Type) *fieldLookupTable {
 	if cached, ok := fieldLookupCache.Load(t); ok {
-		return cached.(*fieldLookupTable)
+		return cached.(*fieldLookupTable) //nolint:errcheck // fieldLookupCache only ever stores *fieldLookupTable
 	}
 	tbl := buildFieldLookupTable(t)
 	actual, _ := fieldLookupCache.LoadOrStore(t, tbl)
-	return actual.(*fieldLookupTable)
+	return actual.(*fieldLookupTable) //nolint:errcheck // fieldLookupCache only ever stores *fieldLookupTable
 }
 
 // buildFieldLookupTable scans struct type t once, deriving a fieldEntry

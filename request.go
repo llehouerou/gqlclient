@@ -69,7 +69,7 @@ func (c *Client) ExecuteRequest(
 	if resp.Header.Get("Content-Encoding") == "gzip" {
 		gr, err := handleGzipResponse(resp, r)
 		if err != nil {
-			_ = resp.Body.Close()
+			_ = resp.Body.Close() //nolint:errcheck // close on error path; nothing to do with the close error
 			return nil, nil, err
 		}
 		// Note: caller is responsible for closing both gr and resp.Body
@@ -78,8 +78,8 @@ func (c *Client) ExecuteRequest(
 
 	// Check status code
 	if resp.StatusCode != http.StatusOK {
-		body, _ := io.ReadAll(r)
-		_ = resp.Body.Close()
+		body, _ := io.ReadAll(r) //nolint:errcheck // partial body is best-effort context for the status error
+		_ = resp.Body.Close()    //nolint:errcheck // close on error path; nothing to do with the close error
 		return nil, nil, fmt.Errorf("%v; body: %q", resp.Status, body)
 	}
 
@@ -119,11 +119,11 @@ func (c *Client) request(
 		)
 		return nil, nil, nil, Errors{e}
 	}
-	defer func() { _ = resp.Body.Close() }()
+	defer func() { _ = resp.Body.Close() }() //nolint:errcheck // deferred close; nothing to do with the close error
 
 	// Check status code
 	if resp.StatusCode != http.StatusOK {
-		body, _ := io.ReadAll(resp.Body)
+		body, _ := io.ReadAll(resp.Body) //nolint:errcheck // partial body is best-effort context for the status error
 		err := c.NewRequestError(
 			ErrRequestError,
 			fmt.Errorf("%v; body: %q", resp.Status, body),
@@ -140,18 +140,16 @@ func (c *Client) request(
 	if err != nil {
 		return nil, nil, nil, Errors{newJSONDecodeError(err)}
 	}
-	defer func() { _ = r.Close() }()
+	defer func() { _ = r.Close() }() //nolint:errcheck // deferred gzip-reader close; nothing to do with the close error
 
 	// Copy response body for debugging if needed
 	var respBody []byte
 	var respReader *bytes.Reader
 	if c.debug {
-		var debugReader io.Reader
-		respBody, debugReader, err = copyResponseForDebug(r)
+		respBody, respReader, err = copyResponseForDebug(r)
 		if err != nil {
 			return nil, nil, nil, Errors{newJSONDecodeError(err)}
 		}
-		respReader = debugReader.(*bytes.Reader)
 		r = io.NopCloser(respReader)
 	}
 
@@ -159,8 +157,7 @@ func (c *Client) request(
 	rawData, gqlErrors := c.DecodeResponse(r)
 
 	if c.debug && respReader != nil {
-		// *bytes.Reader.Seek(0, io.SeekStart) cannot fail.
-		_, _ = respReader.Seek(0, io.SeekStart) //nolint:errcheck // see comment
+		_, _ = respReader.Seek(0, io.SeekStart) //nolint:errcheck // *bytes.Reader.Seek(0, io.SeekStart) cannot fail
 	}
 
 	// Handle JSON decode errors

@@ -128,7 +128,9 @@ func (e Error) getInternalExtension() map[string]any {
 	}
 
 	if ex, ok := e.Extensions["internal"]; ok {
-		return ex.(map[string]any)
+		if m, ok := ex.(map[string]any); ok {
+			return m
+		}
 	}
 
 	return make(map[string]any)

@@ -219,7 +219,10 @@ func (d *decoder) decodeObjectStart() {
 			for i := range v.Len() {
 				pair := v.Index(i)
 				key, val := pair.Index(0), pair.Index(1)
-				keyStr := key.Interface().(string)
+				keyStr, ok := key.Interface().(string)
+				if !ok {
+					continue
+				}
 				if fragments.IsTag(keyStr) {
 					// Add GraphQL fragment and track its typename
 					d.vs.addStack(val, fragments.ExtractTypename(keyStr))

@@ -28,7 +28,10 @@ func fieldByGraphQLName(
 func orderedMapValueByGraphQLName(v reflect.Value, name string) reflect.Value {
 	for i := range v.Len() {
 		pair := v.Index(i)
-		key := pair.Index(0).Interface().(string)
+		key, ok := pair.Index(0).Interface().(string)
+		if !ok {
+			continue
+		}
 		if keyHasGraphQLName(key, name) {
 			return pair.Index(1)
 		}

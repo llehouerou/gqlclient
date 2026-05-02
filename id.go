@@ -54,7 +54,9 @@ func ToID(v any) ID {
 			s = ""
 		}
 	case reflect.String:
-		s = v.(string)
+		// Use reflect.Value.String to handle defined string-kind types
+		// (e.g. `type MyID string`), not just plain string.
+		s = reflect.ValueOf(v).String()
 	}
 	return ID(s)
 }
