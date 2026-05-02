@@ -1,4 +1,4 @@
-.PHONY: help build test test-verbose test-coverage lint fmt format vet clean examples
+.PHONY: help build test test-verbose test-coverage lint fmt format vet clean
 
 # Default target
 help:
@@ -12,7 +12,6 @@ help:
 	@echo "  make format        - Format code with golines (80 char lines)"
 	@echo "  make vet           - Run go vet"
 	@echo "  make clean         - Clean build artifacts"
-	@echo "  make examples      - Build all examples"
 
 # Build the project
 build:
@@ -69,13 +68,6 @@ format:
 vet:
 	@echo "Running go vet..."
 	go vet ./...
-
-# Build examples
-examples:
-	@echo "Building examples..."
-	go build ./example/graphqldev
-	go build ./example/realworld
-	go build ./example/subscription
 
 # Clean build artifacts
 clean:

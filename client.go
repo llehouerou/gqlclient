@@ -29,9 +29,6 @@ type RequestModifier func(*http.Request)
 // Methods can be chained since each returns a new Client:
 //
 //	client = client.WithDebug(true).WithRequestModifier(modifier)
-//
-// Note: This differs from SubscriptionClient, whose With* methods modify
-// the receiver and return self (mutable/builder pattern).
 type Client struct {
 	url             string // GraphQL server URL.
 	httpClient      *http.Client

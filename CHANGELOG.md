@@ -11,6 +11,11 @@ All notable changes to this project are documented in this file.
   (initialisms in upper case). Callers comparing `err.GetCode()` against
   these constants must update the references. No behavior change beyond
   the rename.
+- Removed the exported `ConstructSubscription` function. It built a
+  GraphQL subscription string but the library has no transport to
+  execute one (subscription support was deliberately removed in the fork
+  — see README). Callers in the wild are not expected; the function had
+  no executable counterpart on `Client`.
 
 ## v0.15.1
 

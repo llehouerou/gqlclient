@@ -120,14 +120,3 @@ func ConstructMutation(
 	return constructOperation("mutation", v, variables, true, options...)
 }
 
-// ConstructSubscription builds GraphQL subscription string from struct and variables.
-//
-// The variables parameter must be either nil, a map[string]any, or a struct/pointer to struct
-// with json tags. Passing any other type will cause a panic (programming error).
-func ConstructSubscription(
-	v any,
-	variables any,
-	options ...Option,
-) (string, error) {
-	return constructOperation("subscription", v, variables, true, options...)
-}
