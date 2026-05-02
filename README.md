@@ -30,37 +30,51 @@ fmt.Println(q.Viewer.Login)
 - **Strict lint baseline.** `errcheck`, `bodyclose`, `errorlint`, `errchkjson`, `gosec`, etc. — all findings fixed; no growth allowed.
 - **Fuzz-tested decoder.** The custom JSON decoder is exercised by `FuzzUnmarshalGraphQL` against multiple target shapes.
 
-## When *not* to use this library
+## Scope
 
-- You need **subscriptions** (WebSocket / SSE). gqlclient is HTTP-only — use [`hasura/go-graphql-client`](https://github.com/hasura/go-graphql-client).
-- You want **type-safe Go generated from a schema** with build-time validation. Use [`Khan/genqlient`](https://github.com/Khan/genqlient).
-- You need **file uploads** (GraphQL multipart spec). Out of scope here.
-- You're already happy with [`shurcooL/graphql`](https://github.com/shurcooL/graphql). The reflection-based API in this library is intentionally close to it.
+`gqlclient` is HTTP-only. WebSocket subscriptions, file uploads (GraphQL multipart spec), persisted queries, and code generation from a schema are out of scope.
 
-## Comparison with similar libraries
+## Why a new fork
 
-| Feature                           | gqlclient | shurcooL/graphql | hasura/go-graphql-client | Khan/genqlient    |
-| --------------------------------- | :-------: | :--------------: | :----------------------: | :---------------: |
-| Reflection-based (no codegen)     |     ✅     |        ✅         |             ✅            |         —         |
-| Code-generated from schema        |     —     |        —         |             —            |         ✅         |
-| Query / mutation                  |     ✅     |        ✅         |             ✅            |         ✅         |
-| WebSocket subscriptions           |     —     |        —         |             ✅            |         —         |
-| File uploads (multipart)          |     —     |        —         |             —            |         —         |
-| Inline fragments via struct tags  |     ✅     |        ✅         |             ✅            |         ✅         |
-| Ordered-map mutations             |     ✅     |        ✅         |             ✅            |        n/a        |
-| Custom scalars via interface      |     ✅     |     partial      |             ✅            |         ✅         |
-| Non-stdlib deps                   |     1     |        1         |          several         |     several       |
+This project started as a fork of [`hasura/go-graphql-client`](https://github.com/hasura/go-graphql-client), itself originally forked from [`shurcooL/graphql`](https://github.com/shurcooL/graphql). The motivation was a need for a leaner HTTP-only client with modernized tooling and stricter quality gates. The cleanup grew large enough that a separate module path made the version story cleaner.
 
-## Lineage
+## What's been done in this fork
 
-This project is a fork of [`hasura/go-graphql-client`](https://github.com/hasura/go-graphql-client), itself originally forked from [`shurcooL/graphql`](https://github.com/shurcooL/graphql). The fork:
+### Architecture & code quality
 
-- **removed** WebSocket subscription support and the bundled examples;
-- **modernized** to Go 1.25+ idioms and tooling (golangci-lint v2 strict config, Nix dev shell, multi-platform CI);
-- **rewrote** the JSON decoder to a tokenizer-based path that is ~2× faster on representative payloads while preserving the same struct-tag-driven API (see CHANGELOG v0.15.0);
-- **renamed** the module to `github.com/llehouerou/gqlclient` for a shorter import path.
+- Reorganized into focused internal packages: `internal/decode`, `internal/fragments`, `internal/reflectutil`, `internal/tagparser`, plus a public `types` package for the shared interface contracts.
+- Split the monolithic query and decode files into per-responsibility modules (`query_builder*.go`, `query_arguments.go`, `decode_object.go`, `decode_array.go`, `field_cache.go`, `field_lookup.go`, ...).
+- Standardized error construction with factory functions and a typed `InternalExtensions` shape; consolidated request/response decoration into one helper.
+- Replaced ad-hoc magic numbers with named constants; deduplicated scattered helpers (`IsTrue`, `IsIntegerKind`, `valueStack`, ...).
+- Removed deprecated wrapper scalar types in favor of native Go types.
+- Added a `clone()` helper to keep the immutable `With*` pattern from quietly drifting as new fields are added.
 
-Due to the extent of these changes the project warrants its own module name and independent development path.
+### Performance
+
+- Rewrote the JSON decoder along a tokenizer-based path that is ~2× faster on representative payloads while preserving the struct-tag-driven API (see [CHANGELOG](CHANGELOG.md) v0.15.0).
+- Per-type field-lookup cache, cached `reflect.Implements` / method-set checks, fast-path scalar decoding that avoids a `json.Marshal` + `json.Unmarshal` round-trip.
+
+### API surface
+
+- Removed WebSocket subscription support and the bundled examples — the surface this library covers is exclusively HTTP query and mutation.
+- Established the immutable Client pattern (`With*` returns a new instance, safe to share across goroutines).
+- Added ergonomic transport helpers: `WithHTTPClient`, `WithHeader`, `WithHeaders`, `WithUserAgent`, layered on top of the existing `WithRequestModifier` escape hatch.
+- Runnable godoc examples (`Example_*` funcs) so [pkg.go.dev](https://pkg.go.dev/github.com/llehouerou/gqlclient) shows usable snippets.
+- Module renamed to `github.com/llehouerou/gqlclient` for a shorter import path.
+
+### Testing & quality gates
+
+- Strict golangci-lint v2 baseline (`errcheck` with `check-blank`, `bodyclose`, `noctx`, `errorlint`, `errchkjson`, `gosec`, `revive`, `gocritic`, ...) with all findings resolved and every suppression carrying a written reason.
+- Comprehensive unit and edge-case coverage for wrapper types, struct-based variables, fragment matching, and the full request/response path.
+- Race-free concurrent-decode tests; `t.Parallel()` across the entire suite.
+- `FuzzUnmarshalGraphQL` for coverage-guided fuzzing of the custom JSON decoder.
+
+### Tooling & infrastructure
+
+- Nix flake dev shell pinning Go, `golangci-lint`, `golines`, `goimports-reviser`, and `delve` so dev and CI use the same toolchain.
+- Multi-platform CI on Linux (via Nix), macOS, and Windows; tidy check; coverage upload.
+- Branch protection on `master` (no force-push, no deletion, linear history); Dependabot on `gomod` and `github-actions`.
+- Governance files: `CONTRIBUTING.md`, `SECURITY.md`, package-level godoc.
 
 ## Stability
 
