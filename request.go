@@ -104,7 +104,7 @@ func (c *Client) request(
 	request, reqBody, err := c.BuildRequest(ctx, query, variables)
 	if err != nil {
 		e := c.NewRequestError(
-			ErrJSONEncode,
+			ErrCodeJSONEncode,
 			fmt.Errorf("problem constructing request: %w", err),
 			request,
 			nil,
@@ -118,7 +118,7 @@ func (c *Client) request(
 	resp, err := c.httpClient.Do(request)
 	if err != nil {
 		e := c.NewRequestError(
-			ErrRequestError,
+			ErrCodeRequest,
 			err,
 			request,
 			nil,
@@ -133,7 +133,7 @@ func (c *Client) request(
 	if resp.StatusCode != http.StatusOK {
 		body, _ := io.ReadAll(resp.Body) //nolint:errcheck // partial body is best-effort context for the status error
 		err := c.NewRequestError(
-			ErrRequestError,
+			ErrCodeRequest,
 			fmt.Errorf("%v; body: %q", resp.Status, body),
 			request,
 			nil,
@@ -170,11 +170,11 @@ func (c *Client) request(
 
 	// Handle JSON decode errors
 	if len(gqlErrors) > 0 {
-		// Check if it's a decode error (has ErrJSONDecode code)
+		// Check if it's a decode error (has ErrCodeJSONDecode code)
 		if code, ok := gqlErrors[0].Extensions["code"].(string); ok &&
-			code == ErrJSONDecode {
+			code == ErrCodeJSONDecode {
 			we := c.NewRequestError(
-				ErrJSONDecode,
+				ErrCodeJSONDecode,
 				fmt.Errorf("%s", gqlErrors[0].Message),
 				request,
 				resp,

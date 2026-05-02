@@ -348,7 +348,7 @@ func (c *Client) constructQueryAndExecute(
 	}
 
 	if err != nil {
-		return nil, nil, nil, newSimpleErrors(ErrGraphQLEncode, err)
+		return nil, nil, nil, newSimpleErrors(ErrCodeGraphQLEncode, err)
 	}
 
 	return c.request(ctx, query, variables)

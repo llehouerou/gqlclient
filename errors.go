@@ -1,20 +1,65 @@
 package graphql
 
 import (
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
 	"strings"
 )
 
-// Error codes used throughout the client.
+// Error code strings stored in Error.Extensions["code"]. These are the
+// stable identifiers serialized in the GraphQL extensions map and used
+// for cross-process or cross-language consumers.
+//
+// Most Go callers should reach for the matching sentinel error values
+// (ErrRequest, ErrJSONEncode, ...) with errors.Is rather than comparing
+// these strings by hand.
 const (
-	ErrRequestError  = "request_error"
-	ErrJSONEncode    = "json_encode_error"
-	ErrJSONDecode    = "json_decode_error"
-	ErrGraphQLEncode = "graphql_encode_error"
-	ErrGraphQLDecode = "graphql_decode_error"
+	ErrCodeRequest       = "request_error"
+	ErrCodeJSONEncode    = "json_encode_error"
+	ErrCodeJSONDecode    = "json_decode_error"
+	ErrCodeGraphQLEncode = "graphql_encode_error"
+	ErrCodeGraphQLDecode = "graphql_decode_error"
 )
+
+// Sentinel errors usable with errors.Is to detect specific failure
+// modes. errors.Is(err, ErrJSONDecode) is true whenever any Error
+// in the chain has Extensions["code"] == ErrCodeJSONDecode, including
+// errors generated locally by this library and errors returned by a
+// GraphQL server using the same codes.
+//
+// Example:
+//
+//	if err := client.Query(ctx, &q, nil); err != nil {
+//	    switch {
+//	    case errors.Is(err, graphql.ErrJSONDecode):
+//	        // server returned non-JSON or malformed JSON
+//	    case errors.Is(err, graphql.ErrRequest):
+//	        // HTTP transport failure (DNS, TCP, TLS, status != 200)
+//	    default:
+//	        // server-level GraphQL errors; inspect via errors.As
+//	        var gqlErrs graphql.Errors
+//	        if errors.As(err, &gqlErrs) { ... }
+//	    }
+//	}
+var (
+	ErrRequest       error = &codeError{code: ErrCodeRequest, msg: "request error"}
+	ErrJSONEncode    error = &codeError{code: ErrCodeJSONEncode, msg: "json encode error"}
+	ErrJSONDecode    error = &codeError{code: ErrCodeJSONDecode, msg: "json decode error"}
+	ErrGraphQLEncode error = &codeError{code: ErrCodeGraphQLEncode, msg: "graphql encode error"}
+	ErrGraphQLDecode error = &codeError{code: ErrCodeGraphQLDecode, msg: "graphql decode error"}
+)
+
+// codeError is the type used for the package-level sentinel error
+// values. It is unexported because users compare with errors.Is rather
+// than constructing instances directly.
+type codeError struct {
+	code string
+	msg  string
+}
+
+func (e *codeError) Error() string { return e.msg }
 
 // Errors represents the "errors" array in a response from a GraphQL server.
 // If returned via error interface, the slice is expected to contain at least 1 element.
@@ -30,6 +75,12 @@ type Error struct {
 		Line   int `json:"line"`
 		Column int `json:"column"`
 	} `json:"locations"`
+
+	// underlying is the wrapped cause when this Error was produced
+	// locally (e.g., a *json.SyntaxError surfaced as an ErrJSONDecode).
+	// It is not serialized; Errors decoded from a server response
+	// always have underlying == nil.
+	underlying error
 }
 
 // RequestInfo contains HTTP request information stored in error extensions.
@@ -57,6 +108,25 @@ func (e Error) Error() string {
 	return fmt.Sprintf("Message: %s, Locations: %+v", e.Message, e.Locations)
 }
 
+// Is reports whether target is one of the package-level sentinel
+// errors and the receiver carries the same code in Extensions["code"].
+// This makes errors.Is(err, ErrJSONDecode) work whether the error was
+// generated locally or arrived in a server response with that code.
+func (e Error) Is(target error) bool {
+	var ce *codeError
+	if errors.As(target, &ce) {
+		return e.GetCode() == ce.code
+	}
+	return false
+}
+
+// Unwrap returns the wrapped cause when this Error was produced
+// locally (e.g., a *json.SyntaxError under an ErrJSONDecode). Returns
+// nil for Errors decoded from a server response.
+func (e Error) Unwrap() error {
+	return e.underlying
+}
+
 // Error implements error interface.
 func (e Errors) Error() string {
 	b := strings.Builder{}
@@ -64,6 +134,28 @@ func (e Errors) Error() string {
 		b.WriteString(err.Error())
 	}
 	return b.String()
+}
+
+// Is reports whether any constituent Error matches target. Together with
+// Unwrap, this lets errors.Is and errors.As walk the slice transparently.
+func (e Errors) Is(target error) bool {
+	for i := range e {
+		if errors.Is(e[i], target) {
+			return true
+		}
+	}
+	return false
+}
+
+// Unwrap exposes the constituent Error values to the standard
+// errors package, so errors.As(err, &someErr) finds the first match
+// inside an Errors slice.
+func (e Errors) Unwrap() []error {
+	out := make([]error, len(e))
+	for i := range e {
+		out[i] = e[i]
+	}
+	return out
 }
 
 // GetCode returns the error code from the extensions, or an empty string if
@@ -137,13 +229,16 @@ func (e Error) getInternalExtension() map[string]any {
 }
 
 // newError creates a new Error with the given code and underlying error.
-// The underlying error is stored in the extensions for debugging.
+// The underlying error is retained on the Error so callers can recover it
+// via errors.As; its message is also placed in Error.Message and the
+// code in Error.Extensions["code"] for serialization.
 func newError(code string, err error) Error {
 	return Error{
 		Message: err.Error(),
 		Extensions: map[string]any{
 			"code": code,
 		},
+		underlying: err,
 	}
 }
 
@@ -160,13 +255,13 @@ func newSimpleErrors(code string, err error) Errors {
 // newJSONDecodeError creates an error for JSON decoding failures.
 // Used when the HTTP response body cannot be parsed as valid JSON.
 func newJSONDecodeError(err error) Error {
-	return newError(ErrJSONDecode, err)
+	return newError(ErrCodeJSONDecode, err)
 }
 
 // newGraphQLDecodeError creates an error for GraphQL response unmarshaling failures.
 // Used when GraphQL JSON cannot be unmarshaled into the target Go struct.
 func newGraphQLDecodeError(err error) Error {
-	return newError(ErrGraphQLDecode, err)
+	return newError(ErrCodeGraphQLDecode, err)
 }
 
 // withDebugInfo adds debug information to the error's internal extensions.

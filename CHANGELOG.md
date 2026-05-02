@@ -17,6 +17,13 @@ All notable changes to this project are documented in this file.
   test for the custom JSON decoder, exercising struct, fragment, and
   ordered-map targets. Run with
   `go test ./internal/decode -fuzz=FuzzUnmarshalGraphQL -fuzztime=30s`.
+- Sentinel error values `ErrRequest`, `ErrJSONEncode`, `ErrJSONDecode`,
+  `ErrGraphQLEncode`, `ErrGraphQLDecode` for use with `errors.Is`.
+  `Errors` and `Error` now implement `Is` / `Unwrap` (single and
+  multi), so `errors.As(err, &gqlclient.Errors{})` and
+  `errors.As(err, &single)` recover the underlying values; locally
+  generated errors also expose their cause via `Unwrap()` (e.g.
+  recovering a `*json.SyntaxError` behind an `ErrJSONDecode`).
 
 ### Internal
 
@@ -27,11 +34,18 @@ All notable changes to this project are documented in this file.
 
 ### Breaking changes
 
-- Renamed exported error-code constants `ErrJsonEncode` and `ErrJsonDecode`
-  to `ErrJSONEncode` and `ErrJSONDecode` to match Go naming conventions
-  (initialisms in upper case). Callers comparing `err.GetCode()` against
-  these constants must update the references. No behavior change beyond
-  the rename.
+- Renamed exported error-code constants to `ErrCode*` to free up the
+  base names for typed sentinel errors. Specifically:
+    - `ErrRequestError` → `ErrCodeRequest`
+    - `ErrJsonEncode` → `ErrCodeJSONEncode`
+    - `ErrJsonDecode` → `ErrCodeJSONDecode`
+    - `ErrGraphQLEncode` → `ErrCodeGraphQLEncode`
+    - `ErrGraphQLDecode` → `ErrCodeGraphQLDecode`
+  The new short names (`ErrRequest`, `ErrJSONEncode`, ...) are now
+  sentinel `error` values usable with `errors.Is`. Callers comparing
+  `err.GetCode()` against the old string constants need to update to
+  the `ErrCode*` form, or — preferably — switch to
+  `errors.Is(err, ErrJSONDecode)` and friends.
 - Removed the exported `ConstructSubscription` function. It built a
   GraphQL subscription string but the library has no transport to
   execute one (subscription support was deliberately removed in the fork

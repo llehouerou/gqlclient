@@ -99,6 +99,7 @@ Breaking changes are recorded under the `Unreleased` heading in [CHANGELOG.md](C
   - [Execute pre-built query](#execute-pre-built-query)
   - [Raw bytes response](#raw-bytes-response)
   - [Multiple mutations with ordered map](#multiple-mutations-with-ordered-map)
+  - [Error handling](#error-handling)
   - [Debugging and Unit test](#debugging-and-unit-test)
 - [Directories](#directories)
 - [References](#references)
@@ -657,6 +658,37 @@ variables := map[string]interface{}{
 	"login3": "indigo",
 }
 ```
+
+### Error handling
+
+`Client.Query` / `Client.Mutate` return an `error` that is always a `graphql.Errors` (a slice of `graphql.Error`). It supports the standard `errors.Is` / `errors.As` shape:
+
+```Go
+err := client.Query(ctx, &q, nil)
+if err != nil {
+    switch {
+    case errors.Is(err, graphql.ErrJSONDecode):
+        // server returned non-JSON or malformed JSON
+    case errors.Is(err, graphql.ErrRequest):
+        // HTTP transport failure (DNS, TCP, TLS, status != 200)
+    case errors.Is(err, graphql.ErrGraphQLEncode),
+        errors.Is(err, graphql.ErrGraphQLDecode):
+        // local encode / decode failure
+    default:
+        // server-level GraphQL errors; inspect each one
+        var gqlErrs graphql.Errors
+        if errors.As(err, &gqlErrs) {
+            for _, e := range gqlErrs {
+                fmt.Println(e.Message, e.GetCode())
+            }
+        }
+    }
+}
+```
+
+The sentinel values (`ErrRequest`, `ErrJSONEncode`, `ErrJSONDecode`, `ErrGraphQLEncode`, `ErrGraphQLDecode`) match both errors generated locally by this library and errors returned by a GraphQL server whose `Extensions["code"]` matches the corresponding `ErrCode*` string.
+
+For locally generated errors, `errors.As` against any underlying type also works — for example, recovering the `*json.SyntaxError` behind an `ErrJSONDecode`.
 
 ### Debugging and Unit test
 

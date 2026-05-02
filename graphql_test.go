@@ -247,7 +247,7 @@ func TestClient_Query_errorStatusCode(t *testing.T) {
 	}
 
 	gqlErr := err.(graphql.Errors)
-	if got, want := gqlErr[0].Extensions["code"], graphql.ErrRequestError; got != want {
+	if got, want := gqlErr[0].Extensions["code"], graphql.ErrCodeRequest; got != want {
 		t.Errorf("got error: %v, want: %v", got, want)
 	}
 	if _, ok := gqlErr[0].Extensions["internal"]; ok {
@@ -267,7 +267,7 @@ func TestClient_Query_errorStatusCode(t *testing.T) {
 	if got, want := gqlErr[0].Message, `500 Internal Server Error; body: "important message\n"`; got != want {
 		t.Errorf("got error: %v, want: %v", got, want)
 	}
-	if got, want := gqlErr[0].Extensions["code"], graphql.ErrRequestError; got != want {
+	if got, want := gqlErr[0].Extensions["code"], graphql.ErrCodeRequest; got != want {
 		t.Errorf("got error: %v, want: %v", got, want)
 	}
 	interErr := gqlErr[0].Extensions["internal"].(map[string]any)
@@ -314,8 +314,8 @@ func TestClient_Query_networkError(t *testing.T) {
 	}
 
 	// Check error code
-	if code := errs[0].GetCode(); code != graphql.ErrRequestError {
-		t.Errorf("expected error code %q, got %q", graphql.ErrRequestError, code)
+	if code := errs[0].GetCode(); code != graphql.ErrCodeRequest {
+		t.Errorf("expected error code %q, got %q", graphql.ErrCodeRequest, code)
 	}
 
 	// Check error message contains network error
@@ -1114,7 +1114,7 @@ func TestClient_decorateError(t *testing.T) {
 		baseErr := graphql.Error{
 			Message: "test error",
 			Extensions: map[string]any{
-				"code": graphql.ErrRequestError,
+				"code": graphql.ErrCodeRequest,
 			},
 		}
 
@@ -1165,7 +1165,7 @@ func TestClient_decorateError(t *testing.T) {
 		baseErr := graphql.Error{
 			Message: "test error",
 			Extensions: map[string]any{
-				"code": graphql.ErrRequestError,
+				"code": graphql.ErrCodeRequest,
 			},
 		}
 
@@ -1188,7 +1188,7 @@ func TestClient_decorateError(t *testing.T) {
 
 		// The base error should still have the code
 		if code, ok := decorated.Extensions["code"].(string); !ok ||
-			code != graphql.ErrRequestError {
+			code != graphql.ErrCodeRequest {
 			t.Error("expected code to be preserved")
 		}
 	})
@@ -1239,8 +1239,8 @@ func TestClient_decorateError(t *testing.T) {
 		}
 
 		// Check error code
-		if code := errs[0].GetCode(); code != graphql.ErrJSONDecode {
-			t.Errorf("expected error code %q, got %q", graphql.ErrJSONDecode, code)
+		if code := errs[0].GetCode(); code != graphql.ErrCodeJSONDecode {
+			t.Errorf("expected error code %q, got %q", graphql.ErrCodeJSONDecode, code)
 		}
 
 		// Check error message mentions the read error
@@ -1290,7 +1290,7 @@ func TestClient_newRequestError(t *testing.T) {
 		client := graphql.NewClient("http://example.com", nil)
 
 		err := client.NewRequestError(
-			graphql.ErrJSONDecode,
+			graphql.ErrCodeJSONDecode,
 			errors.New("json decode failed"),
 			nil,
 			nil,
@@ -1303,8 +1303,8 @@ func TestClient_newRequestError(t *testing.T) {
 		}
 
 		if code, ok := err.Extensions["code"].(string); !ok ||
-			code != graphql.ErrJSONDecode {
-			t.Errorf("expected code %q, got %v", graphql.ErrJSONDecode, code)
+			code != graphql.ErrCodeJSONDecode {
+			t.Errorf("expected code %q, got %v", graphql.ErrCodeJSONDecode, code)
 		}
 	})
 
@@ -1325,7 +1325,7 @@ func TestClient_newRequestError(t *testing.T) {
 		}
 
 		decoratedErr := client.NewRequestError(
-			graphql.ErrRequestError,
+			graphql.ErrCodeRequest,
 			errors.New("server error"),
 			req,
 			resp,
@@ -1999,8 +1999,8 @@ func TestClient_executeRequest(t *testing.T) {
 		}
 
 		// Check error code
-		if code := errs[0].GetCode(); code != graphql.ErrJSONDecode {
-			t.Errorf("expected error code %q, got %q", graphql.ErrJSONDecode, code)
+		if code := errs[0].GetCode(); code != graphql.ErrCodeJSONDecode {
+			t.Errorf("expected error code %q, got %q", graphql.ErrCodeJSONDecode, code)
 		}
 
 		// Check error message contains gzip-related text
@@ -2132,8 +2132,8 @@ func TestClient_decodeResponse(t *testing.T) {
 		}
 
 		if code, ok := errs[0].Extensions["code"].(string); !ok ||
-			code != graphql.ErrJSONDecode {
-			t.Errorf("expected error code %q, got %v", graphql.ErrJSONDecode, code)
+			code != graphql.ErrCodeJSONDecode {
+			t.Errorf("expected error code %q, got %v", graphql.ErrCodeJSONDecode, code)
 		}
 	})
 }
@@ -2148,13 +2148,13 @@ func TestError_GetCode(t *testing.T) {
 		err := graphql.Error{
 			Message: "test error",
 			Extensions: map[string]any{
-				"code": graphql.ErrRequestError,
+				"code": graphql.ErrCodeRequest,
 			},
 		}
 
 		got := err.GetCode()
-		if got != graphql.ErrRequestError {
-			t.Errorf("expected code %q, got %q", graphql.ErrRequestError, got)
+		if got != graphql.ErrCodeRequest {
+			t.Errorf("expected code %q, got %q", graphql.ErrCodeRequest, got)
 		}
 	})
 
@@ -2228,7 +2228,7 @@ func TestError_GetInternalExtensions(t *testing.T) {
 		err := graphql.Error{
 			Message: "test error",
 			Extensions: map[string]any{
-				"code": graphql.ErrRequestError,
+				"code": graphql.ErrCodeRequest,
 			},
 		}
 
@@ -2370,7 +2370,7 @@ func TestError_GetInternalExtensions(t *testing.T) {
 		err := graphql.Error{
 			Message: "test error",
 			Extensions: map[string]any{
-				"code": graphql.ErrRequestError,
+				"code": graphql.ErrCodeRequest,
 				"internal": map[string]any{
 					"request": map[string]any{
 						"headers": reqHeaders,
@@ -2475,7 +2475,7 @@ func TestError_GetInternalExtensions(t *testing.T) {
 		baseErr := graphql.Error{
 			Message: "test error",
 			Extensions: map[string]any{
-				"code": graphql.ErrRequestError,
+				"code": graphql.ErrCodeRequest,
 			},
 		}
 
@@ -2489,8 +2489,8 @@ func TestError_GetInternalExtensions(t *testing.T) {
 
 		// Test GetCode()
 		code := decorated.GetCode()
-		if code != graphql.ErrRequestError {
-			t.Errorf("expected code %q, got %q", graphql.ErrRequestError, code)
+		if code != graphql.ErrCodeRequest {
+			t.Errorf("expected code %q, got %q", graphql.ErrCodeRequest, code)
 		}
 
 		// Test GetInternalExtensions()
