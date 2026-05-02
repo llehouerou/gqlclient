@@ -6,49 +6,90 @@ gqlclient
 [![Go Report Card](https://goreportcard.com/badge/github.com/llehouerou/gqlclient)](https://goreportcard.com/report/github.com/llehouerou/gqlclient)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
-## About This Project
+A small, reflection-based GraphQL **client** for Go. You declare your query as a Go struct with `graphql:"…"` tags; the library builds the query string, sends the HTTP request, and unmarshals the response back into your struct.
 
-This project is a fork of [`github.com/hasura/go-graphql-client`](https://github.com/hasura/go-graphql-client), which itself was originally forked from [`github.com/shurcooL/graphql`](https://github.com/shurcooL/graphql).
+```go
+client := graphql.NewClient("https://api.example.com/graphql", nil)
 
-### Key Changes from Upstream
+var q struct {
+    Viewer struct {
+        Login string
+    }
+}
+if err := client.Query(ctx, &q, nil); err != nil {
+    // handle err
+}
+fmt.Println(q.Viewer.Login)
+```
 
-This fork has diverged significantly from the original project:
+## Why use this library
 
-- **Removed WebSocket subscription support**: The subscription client and all related WebSocket functionality have been removed to simplify the codebase and reduce dependencies
-- **Removed examples**: All example code (graphqldev, realworld, subscription examples) has been removed
-- **Module rename**: Changed from `github.com/hasura/go-graphql-client` to `github.com/llehouerou/gqlclient` for a shorter, more convenient import path
-- **Modernization**: Updated to Go 1.25+ with modern Go idioms and tooling
+- **No code generation.** The query *is* your Go struct. Add a field, add a tag — that's it.
+- **Single dependency.** Only `google/uuid` outside the standard library.
+- **Immutable client.** `With*` methods return a new client; safe to share across goroutines.
+- **Strict lint baseline.** `errcheck`, `bodyclose`, `errorlint`, `errchkjson`, `gosec`, etc. — all findings fixed; no growth allowed.
+- **Fuzz-tested decoder.** The custom JSON decoder is exercised by `FuzzUnmarshalGraphQL` against multiple target shapes.
 
-Due to the extent of these changes, this project warrants its own module name and independent development path.
+## When *not* to use this library
 
-### What This Library Provides
+- You need **subscriptions** (WebSocket / SSE). gqlclient is HTTP-only — use [`hasura/go-graphql-client`](https://github.com/hasura/go-graphql-client).
+- You want **type-safe Go generated from a schema** with build-time validation. Use [`Khan/genqlient`](https://github.com/Khan/genqlient).
+- You need **file uploads** (GraphQL multipart spec). Out of scope here.
+- You're already happy with [`shurcooL/graphql`](https://github.com/shurcooL/graphql). The reflection-based API in this library is intentionally close to it.
 
-Package `gqlclient` provides a simple, reflection-based GraphQL client implementation for Go. It focuses on query and mutation operations via HTTP, with a clean API for constructing GraphQL queries from Go structs.
+## Comparison with similar libraries
 
-- [gqlclient](#gqlclient)
-	- [About This Project](#about-this-project)
-		- [Key Changes from Upstream](#key-changes-from-upstream)
-		- [What This Library Provides](#what-this-library-provides)
-	- [Installation](#installation)
-	- [Usage](#usage)
-		- [Authentication](#authentication)
-		- [Simple Query](#simple-query)
-		- [Arguments and Variables](#arguments-and-variables)
-		- [Custom scalar tag](#custom-scalar-tag)
-		- [Skip GraphQL field](#skip-graphql-field)
-		- [Inline Fragments](#inline-fragments)
-		- [Specify GraphQL type name](#specify-graphql-type-name)
-		- [Mutations](#mutations)
-			- [Mutations Without Fields](#mutations-without-fields)
-		- [Options](#options)
-		- [Execute pre-built query](#execute-pre-built-query)
-		- [Raw bytes response](#raw-bytes-response)
-		- [Multiple mutations with ordered map](#multiple-mutations-with-ordered-map)
-		- [Debugging and Unit test](#debugging-and-unit-test)
-	- [Directories](#directories)
-	- [References](#references)
-	- [License](#license)
-  
+| Feature                           | gqlclient | shurcooL/graphql | hasura/go-graphql-client | Khan/genqlient    |
+| --------------------------------- | :-------: | :--------------: | :----------------------: | :---------------: |
+| Reflection-based (no codegen)     |     ✅     |        ✅         |             ✅            |         —         |
+| Code-generated from schema        |     —     |        —         |             —            |         ✅         |
+| Query / mutation                  |     ✅     |        ✅         |             ✅            |         ✅         |
+| WebSocket subscriptions           |     —     |        —         |             ✅            |         —         |
+| File uploads (multipart)          |     —     |        —         |             —            |         —         |
+| Inline fragments via struct tags  |     ✅     |        ✅         |             ✅            |         ✅         |
+| Ordered-map mutations             |     ✅     |        ✅         |             ✅            |        n/a        |
+| Custom scalars via interface      |     ✅     |     partial      |             ✅            |         ✅         |
+| Non-stdlib deps                   |     1     |        1         |          several         |     several       |
+
+## Lineage
+
+This project is a fork of [`hasura/go-graphql-client`](https://github.com/hasura/go-graphql-client), itself originally forked from [`shurcooL/graphql`](https://github.com/shurcooL/graphql). The fork:
+
+- **removed** WebSocket subscription support and the bundled examples;
+- **modernized** to Go 1.25+ idioms and tooling (golangci-lint v2 strict config, Nix dev shell, multi-platform CI);
+- **rewrote** the JSON decoder to a tokenizer-based path that is ~2× faster on representative payloads while preserving the same struct-tag-driven API (see CHANGELOG v0.15.0);
+- **renamed** the module to `github.com/llehouerou/gqlclient` for a shorter import path.
+
+Due to the extent of these changes the project warrants its own module name and independent development path.
+
+## Stability
+
+The library is **pre-1.0**. The query/mutation surface (`NewClient`, `Query`, `Mutate`, struct-tag conventions) has been stable across recent releases; most changes have been internal (perf, lint hygiene). Recent additions (`WithHeader`, `WithUserAgent`, `WithHTTPClient`) are additive and layered over the existing API.
+
+Breaking changes are recorded under the `Unreleased` heading in [CHANGELOG.md](CHANGELOG.md). Once 1.0 is cut, the public API will follow standard Go semver: breaking changes only across major versions.
+
+## Contents
+
+- [Installation](#installation)
+- [Usage](#usage)
+  - [Authentication](#authentication)
+  - [Simple Query](#simple-query)
+  - [Arguments and Variables](#arguments-and-variables)
+  - [Custom scalar tag](#custom-scalar-tag)
+  - [Skip GraphQL field](#skip-graphql-field)
+  - [Inline Fragments](#inline-fragments)
+  - [Specify GraphQL type name](#specify-graphql-type-name)
+  - [Mutations](#mutations)
+    - [Mutations Without Fields](#mutations-without-fields)
+  - [Options](#options)
+  - [Execute pre-built query](#execute-pre-built-query)
+  - [Raw bytes response](#raw-bytes-response)
+  - [Multiple mutations with ordered map](#multiple-mutations-with-ordered-map)
+  - [Debugging and Unit test](#debugging-and-unit-test)
+- [Directories](#directories)
+- [References](#references)
+- [License](#license)
+
 ## Installation
 
 `gqlclient` requires Go version 1.25 or later.
