@@ -61,7 +61,8 @@ linters:
       check-blank: true
       check-type-assertions: true
       exclude-functions:
-        # Documented to never error — exist only to satisfy io.Writer.
+        # Documented to always return nil — the error is part of the
+        # io.Writer interface but never produced by these implementations.
         - (*bytes.Buffer).Write
         - (*bytes.Buffer).WriteByte
         - (*bytes.Buffer).WriteRune

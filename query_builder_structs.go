@@ -1,9 +1,9 @@
 package graphql
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
-	"io"
 	"reflect"
 
 	"github.com/llehouerou/gqlclient/ident"
@@ -102,10 +102,10 @@ func isScalarType(t reflect.Type) bool {
 	return false
 }
 
-// writeStructFields iterates over struct fields and writes them to w.
+// writeStructFields iterates over struct fields and writes them to buf.
 // Returns an error if field processing fails.
 func writeStructFields(
-	w io.Writer,
+	buf *bytes.Buffer,
 	t reflect.Type,
 	v reflect.Value,
 ) error {
@@ -121,19 +121,19 @@ func writeStructFields(
 		}
 
 		if iter != 0 {
-			_, _ = io.WriteString(w, ",")
+			buf.WriteString(",")
 		}
 		iter++
 
 		if !output.isInline {
-			_, _ = io.WriteString(w, output.name)
+			buf.WriteString(output.name)
 		}
 		// Skip writeQuery if the GraphQL type associated with the field is scalar
 		if output.isScalar {
 			continue
 		}
 
-		err := writeQuery(w, f.Type, fieldVal, output.isInline)
+		err := writeQuery(buf, f.Type, fieldVal, output.isInline)
 		if err != nil {
 			return fmt.Errorf(
 				"failed to write query for struct field `%v`: %w",
@@ -145,10 +145,10 @@ func writeStructFields(
 	return nil
 }
 
-// writeStructQuery writes a minified query for a struct type to w.
+// writeStructQuery writes a minified query for a struct type to buf.
 // If inline is true, the struct fields are inlined into parent struct.
 func writeStructQuery(
-	w io.Writer,
+	buf *bytes.Buffer,
 	t reflect.Type,
 	v reflect.Value,
 	inline bool,
@@ -157,7 +157,7 @@ func writeStructQuery(
 		wrapped := reflectutil.UnwrapValue(v)
 		if wrapped.IsValid() {
 			err := writeQuery(
-				w,
+				buf,
 				wrapped.Type(),
 				wrapped,
 				inline,
@@ -178,16 +178,16 @@ func writeStructQuery(
 		return nil
 	}
 	if !inline {
-		_, _ = io.WriteString(w, "{")
+		buf.WriteString("{")
 	}
 
-	err := writeStructFields(w, t, v)
+	err := writeStructFields(buf, t, v)
 	if err != nil {
 		return err
 	}
 
 	if !inline {
-		_, _ = io.WriteString(w, "}")
+		buf.WriteString("}")
 	}
 	return nil
 }

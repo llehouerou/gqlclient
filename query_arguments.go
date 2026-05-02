@@ -3,7 +3,6 @@ package graphql
 import (
 	"bytes"
 	"fmt"
-	"io"
 	"reflect"
 	"sort"
 
@@ -51,9 +50,9 @@ func writeArgumentsFromMap(buf *bytes.Buffer, variables map[string]any) {
 	sort.Strings(keys)
 
 	for _, k := range keys {
-		_, _ = io.WriteString(buf, "$")
-		_, _ = io.WriteString(buf, k)
-		_, _ = io.WriteString(buf, ":")
+		buf.WriteString("$")
+		buf.WriteString(k)
+		buf.WriteString(":")
 		writeArgumentType(buf, reflect.TypeOf(variables[k]), variables[k], true)
 	}
 }
@@ -126,17 +125,17 @@ func collectStructFieldsForArguments(variables any) []argumentFieldInfo {
 // writeArgumentsFromFields writes GraphQL query arguments from collected field information.
 func writeArgumentsFromFields(buf *bytes.Buffer, fields []argumentFieldInfo) {
 	for _, f := range fields {
-		_, _ = io.WriteString(buf, "$")
-		_, _ = io.WriteString(buf, f.jsonName)
-		_, _ = io.WriteString(buf, ":")
+		buf.WriteString("$")
+		buf.WriteString(f.jsonName)
+		buf.WriteString(":")
 		writeArgumentType(buf, f.fieldType, f.value.Interface(), true)
 	}
 }
 
-// writeArgumentType writes a minified GraphQL type for t to w.
+// writeArgumentType writes a minified GraphQL type for t to buf.
 // value indicates whether t is a value (required) type or pointer (optional) type.
 // If value is true, then "!" is written at the end of t.
-func writeArgumentType(w io.Writer, t reflect.Type, v any, value bool) {
+func writeArgumentType(buf *bytes.Buffer, t reflect.Type, v any, value bool) {
 	if reflectutil.ImplementsGraphQLType(t) {
 		value = t.Kind() != reflect.Ptr
 		var typeName string
@@ -153,10 +152,10 @@ func writeArgumentType(w io.Writer, t reflect.Type, v any, value bool) {
 		}
 
 		if ok {
-			_, _ = io.WriteString(w, typeName)
+			buf.WriteString(typeName)
 			if value {
 				// Value is a required type, so add "!" to the end.
-				_, _ = io.WriteString(w, "!")
+				buf.WriteString("!")
 			}
 			return
 		}
@@ -164,34 +163,34 @@ func writeArgumentType(w io.Writer, t reflect.Type, v any, value bool) {
 
 	if t.Kind() == reflect.Ptr {
 		// Pointer is an optional type, so no "!" at the end of the pointer's underlying type.
-		writeArgumentType(w, t.Elem(), v, false)
+		writeArgumentType(buf, t.Elem(), v, false)
 		return
 	}
 
 	if reflectutil.IsIntegerKind(t.Kind()) {
-		_, _ = io.WriteString(w, "Int")
+		buf.WriteString("Int")
 	} else {
 		switch t.Kind() {
 		case reflect.Slice, reflect.Array:
 			// List. E.g., "[Int]".
-			_, _ = io.WriteString(w, "[")
-			writeArgumentType(w, t.Elem(), nil, true)
-			_, _ = io.WriteString(w, "]")
+			buf.WriteString("[")
+			writeArgumentType(buf, t.Elem(), nil, true)
+			buf.WriteString("]")
 		case reflect.Float32, reflect.Float64:
-			_, _ = io.WriteString(w, "Float")
+			buf.WriteString("Float")
 		case reflect.Bool:
-			_, _ = io.WriteString(w, "Boolean")
+			buf.WriteString("Boolean")
 		default:
 			n := t.Name()
 			if n == "string" {
 				n = "String"
 			}
-			_, _ = io.WriteString(w, n)
+			buf.WriteString(n)
 		}
 	}
 
 	if value {
 		// Value is a required type, so add "!" to the end.
-		_, _ = io.WriteString(w, "!")
+		buf.WriteString("!")
 	}
 }

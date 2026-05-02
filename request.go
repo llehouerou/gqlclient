@@ -158,13 +158,9 @@ func (c *Client) request(
 	// Decode GraphQL response
 	rawData, gqlErrors := c.DecodeResponse(r)
 
-	if c.debug {
-		if respReader != nil {
-			_, _ = respReader.Seek(
-				0,
-				io.SeekStart,
-			) // Ignore seek errors for debug logging
-		}
+	if c.debug && respReader != nil {
+		// *bytes.Reader.Seek(0, io.SeekStart) cannot fail.
+		_, _ = respReader.Seek(0, io.SeekStart) //nolint:errcheck // see comment
 	}
 
 	// Handle JSON decode errors

@@ -1,21 +1,21 @@
 package graphql
 
 import (
+	"bytes"
 	"fmt"
-	"io"
 	"reflect"
 
 	"github.com/llehouerou/gqlclient/internal/reflectutil"
 )
 
-// writeSliceQuery writes a minified query for a slice type to w.
+// writeSliceQuery writes a minified query for a slice type to buf.
 func writeSliceQuery(
-	w io.Writer,
+	buf *bytes.Buffer,
 	t reflect.Type,
 	v reflect.Value,
 ) error {
 	if t.Elem().Kind() != reflect.Array {
-		err := writeQuery(w, t.Elem(), reflectutil.IndexSafe(v, 0), false)
+		err := writeQuery(buf, t.Elem(), reflectutil.IndexSafe(v, 0), false)
 		if err != nil {
 			return fmt.Errorf(
 				"failed to write query for slice item `%v`: %w",
@@ -26,12 +26,12 @@ func writeSliceQuery(
 		return nil
 	}
 	// handle [][2]any like an ordered map
-	return writeOrderedMapQuery(w, t, v)
+	return writeOrderedMapQuery(buf, t, v)
 }
 
-// writeOrderedMapQuery writes a minified query for [][2]any pattern to w.
+// writeOrderedMapQuery writes a minified query for [][2]any pattern to buf.
 func writeOrderedMapQuery(
-	w io.Writer,
+	buf *bytes.Buffer,
 	t reflect.Type,
 	v reflect.Value,
 ) error {
@@ -39,7 +39,7 @@ func writeOrderedMapQuery(
 		return fmt.Errorf("only arrays of len 2 are supported, got %v", t.Elem())
 	}
 	sliceOfPairs := v
-	_, _ = io.WriteString(w, "{")
+	buf.WriteString("{")
 	for i := range sliceOfPairs.Len() {
 		pair := sliceOfPairs.Index(i)
 		// it.Value() returns any, so we need to use reflect.ValueOf
@@ -50,8 +50,8 @@ func writeOrderedMapQuery(
 			return fmt.Errorf("expected pair (string, %v), got (%v, %v)",
 				val.Type(), key.Type(), val.Type())
 		}
-		_, _ = io.WriteString(w, keyString)
-		err := writeQuery(w, val.Type(), val, false)
+		buf.WriteString(keyString)
+		err := writeQuery(buf, val.Type(), val, false)
 		if err != nil {
 			return fmt.Errorf(
 				"failed to write query for pair[1] `%v`: %w",
@@ -60,13 +60,13 @@ func writeOrderedMapQuery(
 			)
 		}
 	}
-	_, _ = io.WriteString(w, "}")
+	buf.WriteString("}")
 	return nil
 }
 
-// writeInterfaceQuery writes a minified query for an interface type to w.
+// writeInterfaceQuery writes a minified query for an interface type to buf.
 func writeInterfaceQuery(
-	w io.Writer,
+	buf *bytes.Buffer,
 	t reflect.Type,
 	v reflect.Value,
 	inline bool,
@@ -82,7 +82,7 @@ func writeInterfaceQuery(
 		val.IsNil() {
 		return nil
 	}
-	err := writeQuery(w, val.Type(), val, inline)
+	err := writeQuery(buf, val.Type(), val, inline)
 	if err != nil {
 		return fmt.Errorf("failed to write query for interface `%v`: %w", t, err)
 	}
