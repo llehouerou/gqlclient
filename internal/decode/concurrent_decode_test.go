@@ -43,6 +43,8 @@ var (
 )
 
 func TestConcurrentDecode_RaceFreeAcrossTypes(t *testing.T) {
+	t.Parallel()
+
 	const goroutines = 32
 	const iterations = 200
 
@@ -110,6 +112,8 @@ func (r *recordingUnmarshaler) UnmarshalJSON(b []byte) error {
 }
 
 func TestUnmarshalGraphQL_RoutesCustomUnmarshalerThroughSlowPath(t *testing.T) {
+	t.Parallel()
+
 	type query struct {
 		Custom recordingUnmarshaler `graphql:"custom"`
 	}
@@ -129,6 +133,8 @@ func TestUnmarshalGraphQL_RoutesCustomUnmarshalerThroughSlowPath(t *testing.T) {
 }
 
 func TestUnmarshalGraphQL_PointerCustomUnmarshalerStillSlowPath(t *testing.T) {
+	t.Parallel()
+
 	type query struct {
 		Custom *recordingUnmarshaler `graphql:"custom"`
 	}
@@ -150,6 +156,8 @@ func TestUnmarshalGraphQL_PointerCustomUnmarshalerStillSlowPath(t *testing.T) {
 // Sanity check that json.Number stays raw when targeted at a
 // json.Number field, end-to-end.
 func TestUnmarshalGraphQL_PreservesJSONNumberPrecision(t *testing.T) {
+	t.Parallel()
+
 	type query struct {
 		N json.Number `graphql:"n"`
 	}

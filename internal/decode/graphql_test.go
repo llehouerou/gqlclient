@@ -10,6 +10,8 @@ import (
 )
 
 func TestUnmarshalGraphQL(t *testing.T) {
+	t.Parallel()
+
 	/*
 		query {
 			me {
@@ -43,6 +45,8 @@ func TestUnmarshalGraphQL(t *testing.T) {
 }
 
 func TestUnmarshalGraphQL_graphqlTag(t *testing.T) {
+	t.Parallel()
+
 	type query struct {
 		Foo string `graphql:"baz"`
 	}
@@ -62,6 +66,8 @@ func TestUnmarshalGraphQL_graphqlTag(t *testing.T) {
 }
 
 func TestUnmarshalGraphQL_jsonTag(t *testing.T) {
+	t.Parallel()
+
 	type query struct {
 		Foo string `json:"baz"`
 	}
@@ -81,6 +87,8 @@ func TestUnmarshalGraphQL_jsonTag(t *testing.T) {
 }
 
 func TestUnmarshalGraphQL_jsonRawTag(t *testing.T) {
+	t.Parallel()
+
 	type query struct {
 		Data    json.RawMessage
 		Another string
@@ -103,6 +111,8 @@ func TestUnmarshalGraphQL_jsonRawTag(t *testing.T) {
 }
 
 func TestUnmarshalGraphQL_fieldAsScalar(t *testing.T) {
+	t.Parallel()
+
 	type query struct {
 		Data    json.RawMessage  `scalar:"true"`
 		DataPtr *json.RawMessage `scalar:"true"`
@@ -138,6 +148,8 @@ func TestUnmarshalGraphQL_fieldAsScalar(t *testing.T) {
 }
 
 func TestUnmarshalGraphQL_orderedMap(t *testing.T) {
+	t.Parallel()
+
 	type query [][2]any
 	got := query{
 		{"foo", ""},
@@ -157,6 +169,8 @@ func TestUnmarshalGraphQL_orderedMap(t *testing.T) {
 }
 
 func TestUnmarshalGraphQL_orderedMapWithPointers(t *testing.T) {
+	t.Parallel()
+
 	// Test case similar to sorarezone usage - pointers in ordered map
 	type GameFormation struct {
 		Name string `graphql:"name"`
@@ -200,6 +214,8 @@ func TestUnmarshalGraphQL_orderedMapWithPointers(t *testing.T) {
 }
 
 func TestUnmarshalGraphQL_orderedMapAlias(t *testing.T) {
+	t.Parallel()
+
 	type Update struct {
 		Name string `graphql:"name"`
 	}
@@ -228,6 +244,8 @@ func TestUnmarshalGraphQL_orderedMapAlias(t *testing.T) {
 }
 
 func TestUnmarshalGraphQL_array(t *testing.T) {
+	t.Parallel()
+
 	type query struct {
 		Foo []string
 		Bar []string
@@ -258,6 +276,8 @@ func TestUnmarshalGraphQL_array(t *testing.T) {
 // When unmarshaling into an array, its initial value should be overwritten
 // (rather than appended to).
 func TestUnmarshalGraphQL_arrayReset(t *testing.T) {
+	t.Parallel()
+
 	got := []string{"initial"}
 	err := decode.UnmarshalGraphQL([]byte(`["bar", "baz"]`), &got)
 	if err != nil {
@@ -270,6 +290,8 @@ func TestUnmarshalGraphQL_arrayReset(t *testing.T) {
 }
 
 func TestUnmarshalGraphQL_objectArray(t *testing.T) {
+	t.Parallel()
+
 	type query struct {
 		Foo []struct {
 			Name string
@@ -297,6 +319,8 @@ func TestUnmarshalGraphQL_objectArray(t *testing.T) {
 }
 
 func TestUnmarshalGraphQL_orderedMapArray(t *testing.T) {
+	t.Parallel()
+
 	type query struct {
 		Foo [][][2]any
 	}
@@ -326,6 +350,8 @@ func TestUnmarshalGraphQL_orderedMapArray(t *testing.T) {
 }
 
 func TestUnmarshalGraphQL_pointer(t *testing.T) {
+	t.Parallel()
+
 	s := "will be overwritten"
 	foo := "foo"
 	type query struct {
@@ -351,6 +377,8 @@ func TestUnmarshalGraphQL_pointer(t *testing.T) {
 }
 
 func TestUnmarshalGraphQL_objectPointerArray(t *testing.T) {
+	t.Parallel()
+
 	bar := "bar"
 	baz := "baz"
 	type query struct {
@@ -382,6 +410,8 @@ func TestUnmarshalGraphQL_objectPointerArray(t *testing.T) {
 }
 
 func TestUnmarshalGraphQL_orderedMapNullInArray(t *testing.T) {
+	t.Parallel()
+
 	type query struct {
 		Foo [][][2]any
 	}
@@ -413,6 +443,8 @@ func TestUnmarshalGraphQL_orderedMapNullInArray(t *testing.T) {
 }
 
 func TestUnmarshalGraphQL_pointerWithInlineFragment(t *testing.T) {
+	t.Parallel()
+
 	type actor struct {
 		User struct {
 			DatabaseID uint64
@@ -453,6 +485,8 @@ func TestUnmarshalGraphQL_pointerWithInlineFragment(t *testing.T) {
 }
 
 func TestUnmarshalGraphQL_unexportedField(t *testing.T) {
+	t.Parallel()
+
 	type query struct {
 		foo *string //nolint:unused // Testing unexported field handling
 	}
@@ -466,6 +500,8 @@ func TestUnmarshalGraphQL_unexportedField(t *testing.T) {
 }
 
 func TestUnmarshalGraphQL_multipleValues(t *testing.T) {
+	t.Parallel()
+
 	type query struct {
 		Foo *string
 	}
@@ -482,6 +518,8 @@ func TestUnmarshalGraphQL_multipleValues(t *testing.T) {
 }
 
 func TestUnmarshalGraphQL_multipleValuesInOrderedMap(t *testing.T) {
+	t.Parallel()
+
 	type query [][2]any
 	q := query{{"foo", ""}}
 	err := decode.UnmarshalGraphQL([]byte(`{"foo": "bar"}{"foo": "baz"}`), &q)
@@ -494,6 +532,8 @@ func TestUnmarshalGraphQL_multipleValuesInOrderedMap(t *testing.T) {
 }
 
 func TestUnmarshalGraphQL_union(t *testing.T) {
+	t.Parallel()
+
 	/*
 		{
 			__typename
@@ -549,6 +589,8 @@ func TestUnmarshalGraphQL_union(t *testing.T) {
 }
 
 func TestUnmarshalGraphQL_orderedMapUnion(t *testing.T) {
+	t.Parallel()
+
 	/*
 		{
 			__typename
@@ -607,6 +649,8 @@ func TestUnmarshalGraphQL_orderedMapUnion(t *testing.T) {
 
 // Issue https://github.com/shurcooL/githubv4/issues/18.
 func TestUnmarshalGraphQL_arrayInsideInlineFragment(t *testing.T) {
+	t.Parallel()
+
 	/*
 		query {
 			search(type: ISSUE, first: 1, query: "type:pr repo:owner/name") {
@@ -674,6 +718,8 @@ func TestUnmarshalGraphQL_arrayInsideInlineFragment(t *testing.T) {
 }
 
 func TestUnmarshalGraphQL_unionWithConflictingFieldTypes(t *testing.T) {
+	t.Parallel()
+
 	/*
 		Issue: When a union type has inline fragments with fields of the same name
 		but different types, unmarshaling fails with "cannot unmarshal string into
@@ -751,6 +797,8 @@ func TestUnmarshalGraphQL_unionWithConflictingFieldTypes(t *testing.T) {
 }
 
 func TestUnmarshalGraphQL_unionWithoutTypename(t *testing.T) {
+	t.Parallel()
+
 	/*
 		Test backward compatibility: when there's no __typename field,
 		all fragments should be populated (old behavior).
@@ -794,6 +842,8 @@ func TestUnmarshalGraphQL_unionWithoutTypename(t *testing.T) {
 }
 
 func TestUnmarshalGraphQL_interfaceFragment(t *testing.T) {
+	t.Parallel()
+
 	/*
 		Tests that interface fragments work correctly when __typename is a concrete
 		type that implements the interface.
@@ -883,6 +933,8 @@ func (w Wrapper[T]) GetGraphQLWrapped() T {
 // TestUnmarshalGraphQL_basicWrapper tests basic wrapper type unmarshaling
 // with a simple string value.
 func TestUnmarshalGraphQL_basicWrapper(t *testing.T) {
+	t.Parallel()
+
 	type query struct {
 		Data Wrapper[string]
 	}
@@ -903,6 +955,8 @@ func TestUnmarshalGraphQL_basicWrapper(t *testing.T) {
 
 // TestUnmarshalGraphQL_wrapperWithStruct tests wrapper containing a nested struct.
 func TestUnmarshalGraphQL_wrapperWithStruct(t *testing.T) {
+	t.Parallel()
+
 	type Person struct {
 		Name string
 		Age  int
@@ -932,6 +986,8 @@ func TestUnmarshalGraphQL_wrapperWithStruct(t *testing.T) {
 
 // TestUnmarshalGraphQL_wrapperInSlice tests unmarshaling an array of objects containing wrappers.
 func TestUnmarshalGraphQL_wrapperInSlice(t *testing.T) {
+	t.Parallel()
+
 	type Item struct {
 		Data Wrapper[string]
 	}
@@ -965,6 +1021,8 @@ func TestUnmarshalGraphQL_wrapperInSlice(t *testing.T) {
 // Note: Nested wrappers (Wrapper[Wrapper[T]]) are not fully supported - only the
 // outermost wrapper is automatically unwrapped. This test uses Wrapper[Struct] instead.
 func TestUnmarshalGraphQL_nestedWrappers(t *testing.T) {
+	t.Parallel()
+
 	type Inner struct {
 		Val int
 	}
@@ -993,6 +1051,8 @@ func TestUnmarshalGraphQL_nestedWrappers(t *testing.T) {
 
 // TestUnmarshalGraphQL_wrapperWithPointer tests wrapper containing a pointer type.
 func TestUnmarshalGraphQL_wrapperWithPointer(t *testing.T) {
+	t.Parallel()
+
 	type query struct {
 		Data Wrapper[*string]
 	}
@@ -1014,6 +1074,8 @@ func TestUnmarshalGraphQL_wrapperWithPointer(t *testing.T) {
 
 // TestUnmarshalGraphQL_wrapperNull tests wrapper with null JSON value.
 func TestUnmarshalGraphQL_wrapperNull(t *testing.T) {
+	t.Parallel()
+
 	type query struct {
 		Data Wrapper[*string]
 	}
@@ -1034,6 +1096,8 @@ func TestUnmarshalGraphQL_wrapperNull(t *testing.T) {
 
 // TestUnmarshalGraphQL_wrapperEmpty tests wrapper with empty/zero value.
 func TestUnmarshalGraphQL_wrapperEmpty(t *testing.T) {
+	t.Parallel()
+
 	type query struct {
 		Data Wrapper[string]
 	}
@@ -1054,6 +1118,8 @@ func TestUnmarshalGraphQL_wrapperEmpty(t *testing.T) {
 
 // TestUnmarshalGraphQL_wrapperWithPrimitives tests wrapper with various primitive types.
 func TestUnmarshalGraphQL_wrapperWithPrimitives(t *testing.T) {
+	t.Parallel()
+
 	type query struct {
 		IntVal  Wrapper[int]
 		BoolVal Wrapper[bool]
@@ -1085,6 +1151,8 @@ func TestUnmarshalGraphQL_wrapperWithPrimitives(t *testing.T) {
 // we end up with an invalid reflect.Value. This test uses an interface field which
 // can trigger this scenario.
 func TestUnmarshalGraphQL_nilPointerToWrapper(t *testing.T) {
+	t.Parallel()
+
 	type query struct {
 		Data any // interface field that could contain a wrapper
 	}
@@ -1121,6 +1189,8 @@ func TestUnmarshalGraphQL_nilPointerToWrapper(t *testing.T) {
 // This tests the fix from commit 355f4e8 which added wrapper handling in the array
 // processing path, allowing Wrapper[[]T] patterns.
 func TestUnmarshalGraphQL_wrapperContainingSlice(t *testing.T) {
+	t.Parallel()
+
 	type query struct {
 		Items Wrapper[[]string]
 	}
@@ -1146,6 +1216,8 @@ func TestUnmarshalGraphQL_wrapperContainingSlice(t *testing.T) {
 // unwrapping logic from commit 355f4e8. Since wrappers are structs, the JSON
 // must contain objects with the wrapper's structure.
 func TestUnmarshalGraphQL_sliceOfWrappers(t *testing.T) {
+	t.Parallel()
+
 	type query struct {
 		Items []Wrapper[string]
 	}
@@ -1177,6 +1249,8 @@ func TestUnmarshalGraphQL_sliceOfWrappers(t *testing.T) {
 // TestUnmarshalGraphQL_wrapperContainingComplexSlice tests wrapper containing
 // a slice of structs, combining both features from commit 355f4e8.
 func TestUnmarshalGraphQL_wrapperContainingComplexSlice(t *testing.T) {
+	t.Parallel()
+
 	type Person struct {
 		Name string
 		Age  int
@@ -1212,6 +1286,8 @@ func TestUnmarshalGraphQL_wrapperContainingComplexSlice(t *testing.T) {
 // This regression test ensures we properly handle interface types when removing
 // array template elements (fix for panic: reflect: call of reflect.Value.Len on interface Value).
 func TestUnmarshalGraphQL_arrayWithInterfaceField(t *testing.T) {
+	t.Parallel()
+
 	type Item struct {
 		Name string
 		Data any // interface field
@@ -1245,6 +1321,8 @@ func TestUnmarshalGraphQL_arrayWithInterfaceField(t *testing.T) {
 }
 
 func TestUnmarshalGraphQL_templateSliceError(t *testing.T) {
+	t.Parallel()
+
 	// Test that providing a slice with >1 template items returns an error.
 	// Template slices should have either 0 items (use zero value) or 1 item (use as template).
 	type query struct {
@@ -1272,11 +1350,15 @@ func TestUnmarshalGraphQL_templateSliceError(t *testing.T) {
 // This verifies that decodeArrayStart correctly handles nil pointers to slices
 // (related to TODO at line 557 - pointer initialization in arrays).
 func TestUnmarshalGraphQL_pointerToSlice(t *testing.T) {
+	t.Parallel()
+
 	type query struct {
 		Items *[]string
 	}
 
 	t.Run("nil pointer to slice", func(t *testing.T) {
+		t.Parallel()
+
 		var got query
 		// Items is initially nil
 		err := decode.UnmarshalGraphQL([]byte(`{
@@ -1294,6 +1376,8 @@ func TestUnmarshalGraphQL_pointerToSlice(t *testing.T) {
 	})
 
 	t.Run("initialized pointer to slice", func(t *testing.T) {
+		t.Parallel()
+
 		items := []string{"old"}
 		got := query{Items: &items}
 
@@ -1312,6 +1396,8 @@ func TestUnmarshalGraphQL_pointerToSlice(t *testing.T) {
 	})
 
 	t.Run("null array resets to empty slice", func(t *testing.T) {
+		t.Parallel()
+
 		items := []string{"old"}
 		got := query{Items: &items}
 
@@ -1332,6 +1418,8 @@ func TestUnmarshalGraphQL_pointerToSlice(t *testing.T) {
 // as a template (instead of [][2]any ordered map) returns a clear error.
 // This tests the copyTemplate error path.
 func TestUnmarshalGraphQL_mapTemplateError(t *testing.T) {
+	t.Parallel()
+
 	type query struct {
 		Items []map[string]string
 	}
@@ -1365,6 +1453,8 @@ func TestUnmarshalGraphQL_mapTemplateError(t *testing.T) {
 }
 
 func TestUnmarshalGraphQL_fragmentTypeEdgeCase(t *testing.T) {
+	t.Parallel()
+
 	// Tests fragmentType() accessing index beyond fragmentTypes slice length
 	type query struct {
 		User struct {
@@ -1418,6 +1508,8 @@ func TestUnmarshalGraphQL_fragmentTypeEdgeCase(t *testing.T) {
 }
 
 func TestUnmarshalGraphQL_extractFragmentTypenameInvalid(t *testing.T) {
+	t.Parallel()
+
 	// Tests extractFragmentTypename() with invalid/non-fragment tags
 	type query struct {
 		User struct {
@@ -1442,6 +1534,8 @@ func TestUnmarshalGraphQL_extractFragmentTypenameInvalid(t *testing.T) {
 }
 
 func TestUnmarshalGraphQL_fragmentWithNonMatchingTypename(t *testing.T) {
+	t.Parallel()
+
 	// Tests fragment filtering when __typename doesn't match any fragments
 	// but extra fields that don't match fragments are ignored
 	type query struct {
@@ -1483,6 +1577,8 @@ func TestUnmarshalGraphQL_fragmentWithNonMatchingTypename(t *testing.T) {
 }
 
 func TestUnmarshalGraphQL_nestedFragmentsWithTypename(t *testing.T) {
+	t.Parallel()
+
 	// Tests deeply nested fragments with __typename at multiple levels
 	type query struct {
 		Repository struct {
@@ -1533,6 +1629,8 @@ func TestUnmarshalGraphQL_nestedFragmentsWithTypename(t *testing.T) {
 }
 
 func TestUnmarshalGraphQL_orderedMapWithMultipleFragments(t *testing.T) {
+	t.Parallel()
+
 	// Tests ordered map ([][2]any) with multiple entries (not fragments)
 	// This tests the ordered map copy functionality
 	type User struct {
@@ -1582,6 +1680,8 @@ func TestUnmarshalGraphQL_orderedMapWithMultipleFragments(t *testing.T) {
 }
 
 func TestUnmarshalGraphQL_recursiveStructWithFragments(t *testing.T) {
+	t.Parallel()
+
 	// Tests recursive struct handling with fragments
 	type Node struct {
 		ID       string

@@ -168,9 +168,6 @@ linters:
           - errcheck
           # Test-side: type-asserting on errors is part of the assertion.
           - errorlint
-          # Test parallelism is a project-wide decision tracked separately;
-          # see TODO in CONTRIBUTING.md when added.
-          - paralleltest
 
       # Test-only revive findings: cosmetic naming, bool literals, etc.
       # Production exports stay under the full revive ruleset.

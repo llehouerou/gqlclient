@@ -5,6 +5,8 @@ import (
 )
 
 func TestParseGraphQLTag_SimpleFieldName(t *testing.T) {
+	t.Parallel()
+
 	tag := "name"
 
 	parsed, err := ParseGraphQLTag(tag)
@@ -27,6 +29,8 @@ func TestParseGraphQLTag_SimpleFieldName(t *testing.T) {
 }
 
 func TestParseGraphQLTag_FieldWithArguments(t *testing.T) {
+	t.Parallel()
+
 	tag := "height(unit: METER)"
 
 	parsed, err := ParseGraphQLTag(tag)
@@ -46,6 +50,8 @@ func TestParseGraphQLTag_FieldWithArguments(t *testing.T) {
 }
 
 func TestParseGraphQLTag_Alias(t *testing.T) {
+	t.Parallel()
+
 	tag := "node1: node"
 
 	parsed, err := ParseGraphQLTag(tag)
@@ -65,6 +71,8 @@ func TestParseGraphQLTag_Alias(t *testing.T) {
 }
 
 func TestParseGraphQLTag_AliasWithArguments(t *testing.T) {
+	t.Parallel()
+
 	tag := `node1: node(id: "MDEyOklzc3VlQ29tbWVudDE2OTQwNzk0Ng==")`
 
 	parsed, err := ParseGraphQLTag(tag)
@@ -89,6 +97,8 @@ func TestParseGraphQLTag_AliasWithArguments(t *testing.T) {
 }
 
 func TestParseGraphQLTag_Fragment(t *testing.T) {
+	t.Parallel()
+
 	tag := "... on Droid"
 
 	parsed, err := ParseGraphQLTag(tag)
@@ -105,6 +115,8 @@ func TestParseGraphQLTag_Fragment(t *testing.T) {
 }
 
 func TestParseGraphQLTag_FragmentNoTypename(t *testing.T) {
+	t.Parallel()
+
 	tag := "..."
 
 	parsed, err := ParseGraphQLTag(tag)
@@ -121,6 +133,8 @@ func TestParseGraphQLTag_FragmentNoTypename(t *testing.T) {
 }
 
 func TestParseGraphQLTag_SkipField(t *testing.T) {
+	t.Parallel()
+
 	tag := "-"
 
 	parsed, err := ParseGraphQLTag(tag)
@@ -134,6 +148,8 @@ func TestParseGraphQLTag_SkipField(t *testing.T) {
 }
 
 func TestParseGraphQLTag_WithWhitespace(t *testing.T) {
+	t.Parallel()
+
 	tag := "  height(unit: METER)  "
 
 	parsed, err := ParseGraphQLTag(tag)
@@ -150,6 +166,8 @@ func TestParseGraphQLTag_WithWhitespace(t *testing.T) {
 }
 
 func TestParseGraphQLTag_EmptyString(t *testing.T) {
+	t.Parallel()
+
 	tag := ""
 
 	parsed, err := ParseGraphQLTag(tag)
@@ -163,6 +181,8 @@ func TestParseGraphQLTag_EmptyString(t *testing.T) {
 }
 
 func TestParseGraphQLTag_VariableInArguments(t *testing.T) {
+	t.Parallel()
+
 	tag := "human(id: $id)"
 
 	parsed, err := ParseGraphQLTag(tag)
@@ -179,6 +199,8 @@ func TestParseGraphQLTag_VariableInArguments(t *testing.T) {
 }
 
 func TestParseGraphQLTag_ComplexRealWorldExample(t *testing.T) {
+	t.Parallel()
+
 	tag := `node1: node(id: "MDEyOklzc3VlQ29tbWVudDE2OTQwNzk0Ng==")`
 
 	parsed, err := ParseGraphQLTag(tag)
@@ -195,6 +217,8 @@ func TestParseGraphQLTag_ComplexRealWorldExample(t *testing.T) {
 }
 
 func TestParseGraphQLTag_MultipleColonsInArguments(t *testing.T) {
+	t.Parallel()
+
 	tag := "field(a: 1, b: 2, c: 3)"
 
 	parsed, err := ParseGraphQLTag(tag)
@@ -214,6 +238,8 @@ func TestParseGraphQLTag_MultipleColonsInArguments(t *testing.T) {
 }
 
 func TestParseGraphQLTag_FragmentWithExtraWhitespace(t *testing.T) {
+	t.Parallel()
+
 	tag := "  ...   on   Droid  "
 
 	parsed, err := ParseGraphQLTag(tag)
@@ -230,6 +256,8 @@ func TestParseGraphQLTag_FragmentWithExtraWhitespace(t *testing.T) {
 }
 
 func TestParseGraphQLTag_NoArguments(t *testing.T) {
+	t.Parallel()
+
 	tag := "field()"
 
 	parsed, err := ParseGraphQLTag(tag)
@@ -246,6 +274,8 @@ func TestParseGraphQLTag_NoArguments(t *testing.T) {
 }
 
 func TestParseGraphQLTag_UnbalancedParentheses(t *testing.T) {
+	t.Parallel()
+
 	// Missing closing paren - should handle gracefully
 	tag := "field(arg: value"
 
@@ -261,6 +291,8 @@ func TestParseGraphQLTag_UnbalancedParentheses(t *testing.T) {
 }
 
 func TestParseGraphQLTag_NestedParentheses(t *testing.T) {
+	t.Parallel()
+
 	tag := "field(arg: func(nested))"
 
 	parsed, err := ParseGraphQLTag(tag)
@@ -281,6 +313,8 @@ func TestParseGraphQLTag_NestedParentheses(t *testing.T) {
 }
 
 func TestParseGraphQLTag_AliasWithColonInFieldName(t *testing.T) {
+	t.Parallel()
+
 	// Field name can contain colons (only first colon is alias separator)
 	tag := "alias: http://example.com"
 
@@ -303,6 +337,8 @@ func TestParseGraphQLTag_AliasWithColonInFieldName(t *testing.T) {
 }
 
 func TestParseGraphQLTag_AliasWithArgumentsRealWorld(t *testing.T) {
+	t.Parallel()
+
 	// Real-world pattern from sorare: alias with arguments
 	tag := "shortDisplayName:displayName(short:true)"
 
@@ -323,6 +359,8 @@ func TestParseGraphQLTag_AliasWithArgumentsRealWorld(t *testing.T) {
 }
 
 func TestParseGraphQLTag_EscapedQuotesInArguments(t *testing.T) {
+	t.Parallel()
+
 	// Real-world pattern from sorare: escaped quotes inside arguments
 	tag := `videoUrl(derivative:\"low_res\")`
 
@@ -345,6 +383,8 @@ func TestParseGraphQLTag_EscapedQuotesInArguments(t *testing.T) {
 }
 
 func TestParseGraphQLTag_LongFragmentTypename(t *testing.T) {
+	t.Parallel()
+
 	// Real-world pattern from sorare: long typename in fragment
 	tag := "... on SolanaTokenTransferAuthorizationRequest"
 

@@ -28,6 +28,8 @@ func (cd cachedDirective) String() string {
 }
 
 func TestConstructQuery(t *testing.T) {
+	t.Parallel()
+
 	tests := []struct {
 		options     []Option
 		inV         any
@@ -363,6 +365,8 @@ type DeleteUser struct {
 }
 
 func TestConstructMutation(t *testing.T) {
+	t.Parallel()
+
 	tests := []struct {
 		inV         any
 		inVariables map[string]any
@@ -411,6 +415,8 @@ func TestConstructMutation(t *testing.T) {
 }
 
 func TestQueryArguments(t *testing.T) {
+	t.Parallel()
+
 	iVal := int(123)
 	i8Val := int8(12)
 	i16Val := int16(500)
@@ -581,6 +587,8 @@ func TestQueryArguments(t *testing.T) {
 // added in commit e2d1096. This validates that structs with json tags can be
 // used as variables instead of only maps.
 func TestQueryArguments_StructVariables(t *testing.T) {
+	t.Parallel()
+
 	iVal := int(123)
 	i8Val := int8(12)
 	i16Val := int16(500)
@@ -857,6 +865,8 @@ func TestQueryArguments_StructVariables(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+
 			got := queryArguments(tc.in)
 			if got != tc.want {
 				t.Errorf(
@@ -871,6 +881,8 @@ func TestQueryArguments_StructVariables(t *testing.T) {
 
 // TestQueryArguments_InvalidTypes tests error handling for invalid variable types
 func TestQueryArguments_InvalidTypes(t *testing.T) {
+	t.Parallel()
+
 	tests := []struct {
 		name      string
 		in        any
@@ -905,6 +917,8 @@ func TestQueryArguments_InvalidTypes(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+
 			defer func() {
 				r := recover()
 				if !tc.wantPanic {
@@ -973,6 +987,8 @@ func (cth *customTypeHint) String() string {
 }
 
 func TestDynamicCustomType_GetGraphQLType(t *testing.T) {
+	t.Parallel()
+
 	type gqlGetRowsQuery struct {
 		GetRows struct {
 			Data []struct {
@@ -1016,6 +1032,8 @@ func TestDynamicCustomType_GetGraphQLType(t *testing.T) {
 // can be used as struct fields and their GetGraphQLType() method is called
 // to determine the GraphQL field representation instead of using struct tags.
 func TestGraphQLTypeInterface_StructFields(t *testing.T) {
+	t.Parallel()
+
 	// CustomFieldWithArgs is a field type that returns a GraphQL field with arguments
 	type CustomFieldWithArgs struct {
 		Value string
@@ -1032,6 +1050,8 @@ func TestGraphQLTypeInterface_StructFields(t *testing.T) {
 
 	// Test 1: Field with GraphQL arguments via GetGraphQLType()
 	t.Run("FieldWithArguments", func(t *testing.T) {
+		t.Parallel()
+
 		type CustomFieldWithArgs struct { //nolint:unused // Test type definition
 			Value string
 		}
@@ -1059,6 +1079,8 @@ func TestGraphQLTypeInterface_StructFields(t *testing.T) {
 
 	// Test 2: Field implementing GraphQLType with custom representation
 	t.Run("CustomTypeField", func(t *testing.T) {
+		t.Parallel()
+
 		// CustomTimestamp that returns a GraphQL field with specific format
 		type CustomTimestamp struct { //nolint:unused // Test type definition
 			time.Time
@@ -1087,6 +1109,8 @@ func TestGraphQLTypeInterface_StructFields(t *testing.T) {
 
 	// Test 3: Multiple fields implementing GraphQLType
 	t.Run("MultipleCustomFields", func(t *testing.T) {
+		t.Parallel()
+
 		query := struct {
 			Repository struct {
 				Owner       string
@@ -1109,6 +1133,8 @@ func TestGraphQLTypeInterface_StructFields(t *testing.T) {
 
 	// Test 4: Nested struct with GraphQLType field
 	t.Run("NestedStructWithCustomField", func(t *testing.T) {
+		t.Parallel()
+
 		query := struct {
 			Organization struct {
 				Repository struct {
@@ -1132,6 +1158,8 @@ func TestGraphQLTypeInterface_StructFields(t *testing.T) {
 	// Test 5: Array of GraphQLType implementing types
 	// The slice element type's GetGraphQLType() should be used for the field name
 	t.Run("ArrayOfCustomFields", func(t *testing.T) {
+		t.Parallel()
+
 		query := struct {
 			User struct {
 				Name    string
@@ -1154,6 +1182,8 @@ func TestGraphQLTypeInterface_StructFields(t *testing.T) {
 
 	// Test 6: Array of pointer GraphQLType implementing types
 	t.Run("ArrayOfPointerCustomFields", func(t *testing.T) {
+		t.Parallel()
+
 		query := struct {
 			User struct {
 				Name    string
@@ -1333,6 +1363,8 @@ func (t Tests) GetGraphQLType() string {
 }
 
 func TestInterface(t *testing.T) {
+	t.Parallel()
+
 	q := NewNestedQuery[Tests]("testcontainer")
 	want := `{testcontainer{tests{value}}}`
 	got, err := ConstructQuery(q, make(map[string]any))
@@ -1345,6 +1377,8 @@ func TestInterface(t *testing.T) {
 
 // TestInterface_NilInterface tests handling of uninitialized interface field
 func TestInterface_NilInterface(t *testing.T) {
+	t.Parallel()
+
 	type Query struct {
 		Layer ContainerLayer // nil interface
 	}
@@ -1362,6 +1396,8 @@ func TestInterface_NilInterface(t *testing.T) {
 
 // TestInterface_NilPointerValue tests interface containing nil pointer
 func TestInterface_NilPointerValue(t *testing.T) {
+	t.Parallel()
+
 	type Query struct {
 		Layer ContainerLayer
 	}
@@ -1380,6 +1416,8 @@ func TestInterface_NilPointerValue(t *testing.T) {
 
 // TestInterface_EmptyInterface tests empty interface{} type
 func TestInterface_EmptyInterface(t *testing.T) {
+	t.Parallel()
+
 	type Query struct {
 		Data any `graphql:"data"` // using any (interface{})
 	}
@@ -1396,6 +1434,8 @@ func TestInterface_EmptyInterface(t *testing.T) {
 
 // TestInterface_InSlice tests slice of interfaces
 func TestInterface_InSlice(t *testing.T) {
+	t.Parallel()
+
 	type Query struct {
 		Layers []ContainerLayer `graphql:"layers"`
 	}
@@ -1419,6 +1459,8 @@ func TestInterface_InSlice(t *testing.T) {
 
 // TestInterface_ErrorPath tests error handling during interface recursion
 func TestInterface_ErrorPath(t *testing.T) {
+	t.Parallel()
+
 	// Test that errors from nested interface processing are properly wrapped
 	// We'll use a circular reference which causes a stack overflow protection error
 	// or just verify that the interface case itself works without errors for valid types
@@ -1465,6 +1507,8 @@ func (w Wrapper[T]) GetGraphQLWrapped() T {
 }
 
 func TestWrapper(t *testing.T) {
+	t.Parallel()
+
 	q := NewNestedQuery[Wrapper[Wrappeds]]("testcontainer")
 	want := `{testcontainer{wrapper{value}}}`
 	got, err := ConstructQuery(q, make(map[string]any))
@@ -1477,6 +1521,8 @@ func TestWrapper(t *testing.T) {
 
 // TestWrapper_NilPointer tests wrapper with nil pointer value
 func TestWrapper_NilPointer(t *testing.T) {
+	t.Parallel()
+
 	type Query struct {
 		Container struct {
 			Wrapper *Wrapper[Wrapped] `graphql:"wrapper"`
@@ -1496,6 +1542,8 @@ func TestWrapper_NilPointer(t *testing.T) {
 
 // TestWrapper_Nested tests nested wrappers (Wrapper[Wrapper[T]])
 func TestWrapper_Nested(t *testing.T) {
+	t.Parallel()
+
 	type DoubleWrapped struct {
 		Inner Wrapper[Wrapped]
 	}
@@ -1519,6 +1567,8 @@ func TestWrapper_Nested(t *testing.T) {
 
 // TestWrapper_SingleStruct tests wrapper with single struct (not slice)
 func TestWrapper_SingleStruct(t *testing.T) {
+	t.Parallel()
+
 	type Query struct {
 		Container struct {
 			Single Wrapper[Wrapped] `graphql:"single"`
@@ -1538,6 +1588,8 @@ func TestWrapper_SingleStruct(t *testing.T) {
 
 // TestWrapper_PointerContent tests wrapper with pointer wrapped content
 func TestWrapper_PointerContent(t *testing.T) {
+	t.Parallel()
+
 	type Query struct {
 		Container struct {
 			PtrWrapper Wrapper[*Wrapped] `graphql:"ptrWrapper"`
@@ -1557,7 +1609,11 @@ func TestWrapper_PointerContent(t *testing.T) {
 
 // TestWrapper_PrimitiveContent tests wrapper with primitive types
 func TestWrapper_PrimitiveContent(t *testing.T) {
+	t.Parallel()
+
 	t.Run("StringWrapper", func(t *testing.T) {
+		t.Parallel()
+
 		type Query struct {
 			Container struct {
 				StringWrap Wrapper[string] `graphql:"stringWrap"`
@@ -1576,6 +1632,8 @@ func TestWrapper_PrimitiveContent(t *testing.T) {
 	})
 
 	t.Run("IntWrapper", func(t *testing.T) {
+		t.Parallel()
+
 		type Query struct {
 			Container struct {
 				IntWrap Wrapper[int] `graphql:"intWrap"`
@@ -1596,6 +1654,8 @@ func TestWrapper_PrimitiveContent(t *testing.T) {
 
 // TestWrapper_MultipleFields tests struct with multiple wrapper fields
 func TestWrapper_MultipleFields(t *testing.T) {
+	t.Parallel()
+
 	type Query struct {
 		Container struct {
 			Wrapper1 Wrapper[Wrapped]  `graphql:"wrapper1"`
@@ -1617,6 +1677,8 @@ func TestWrapper_MultipleFields(t *testing.T) {
 
 // TestWrapper_CustomGraphQLTag tests that GetGraphQLType() overrides graphql tag
 func TestWrapper_CustomGraphQLTag(t *testing.T) {
+	t.Parallel()
+
 	type Query struct {
 		Container struct {
 			MyWrapper Wrapper[Wrapped] `graphql:"customName(arg: 123)"`
@@ -1636,6 +1698,8 @@ func TestWrapper_CustomGraphQLTag(t *testing.T) {
 
 // TestWrapper_SkipTag tests that GetGraphQLType() overrides ALL tags including "-"
 func TestWrapper_SkipTag(t *testing.T) {
+	t.Parallel()
+
 	type Query struct {
 		Container struct {
 			SkipMe Wrapper[Wrapped] `graphql:"-"`
@@ -1659,6 +1723,8 @@ func TestWrapper_SkipTag(t *testing.T) {
 
 // TestWrapper_ScalarTag tests wrapper with scalar tag
 func TestWrapper_ScalarTag(t *testing.T) {
+	t.Parallel()
+
 	type Query struct {
 		Container struct {
 			ScalarWrapper Wrapper[Wrapped] `graphql:"scalarWrapper" scalar:"true"`
@@ -1686,11 +1752,15 @@ func TestWrapper_ScalarTag(t *testing.T) {
 //
 // RECOMMENDATION: Don't use anonymous Wrapper[T] with sibling fields!
 func TestWrapper_EmbeddedAnonymous(t *testing.T) {
+	t.Parallel()
+
 	type EmbeddedWrapper struct {
 		Wrapper[Wrapped]
 	}
 
 	t.Run("AnonymousEmbedWithOtherField", func(t *testing.T) {
+		t.Parallel()
+
 		type Query struct {
 			Container struct {
 				EmbeddedWrapper        // anonymous: promotes Wrapper methods to Container
@@ -1712,6 +1782,8 @@ func TestWrapper_EmbeddedAnonymous(t *testing.T) {
 	})
 
 	t.Run("AnonymousEmbedOnly", func(t *testing.T) {
+		t.Parallel()
+
 		type Query struct {
 			Container struct {
 				EmbeddedWrapper
@@ -1730,6 +1802,8 @@ func TestWrapper_EmbeddedAnonymous(t *testing.T) {
 	})
 
 	t.Run("DirectAnonymousWrapper", func(t *testing.T) {
+		t.Parallel()
+
 		type Query struct {
 			Container struct {
 				Wrapper[Wrapped]
@@ -1749,6 +1823,8 @@ func TestWrapper_EmbeddedAnonymous(t *testing.T) {
 	})
 
 	t.Run("NamedEmbedWrapper", func(t *testing.T) {
+		t.Parallel()
+
 		type Query struct {
 			Container struct {
 				Embed EmbeddedWrapper // NAMED field - no method promotion!
@@ -1769,6 +1845,8 @@ func TestWrapper_EmbeddedAnonymous(t *testing.T) {
 	})
 
 	t.Run("SimpleAnonymousStruct", func(t *testing.T) {
+		t.Parallel()
+
 		type SimpleEmbed struct {
 			Value string `graphql:"value"`
 		}
@@ -1793,6 +1871,8 @@ func TestWrapper_EmbeddedAnonymous(t *testing.T) {
 }
 
 func TestHasVariables(t *testing.T) {
+	t.Parallel()
+
 	tests := []struct {
 		name      string
 		variables any
@@ -1862,6 +1942,8 @@ func TestHasVariables(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
 			if got := hasVariables(tt.variables); got != tt.want {
 				t.Errorf("hasVariables() = %v, want %v", got, tt.want)
 			}

@@ -8,6 +8,8 @@ import (
 )
 
 func TestIsStructField(t *testing.T) {
+	t.Parallel()
+
 	tests := []struct {
 		name string
 		tag  string
@@ -52,6 +54,8 @@ func TestIsStructField(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
 			// Create a struct field with the given tag
 			field := reflect.StructField{
 				Name: "TestField",
@@ -67,6 +71,8 @@ func TestIsStructField(t *testing.T) {
 }
 
 func TestIsTag(t *testing.T) {
+	t.Parallel()
+
 	tests := []struct {
 		name     string
 		tagValue string
@@ -116,6 +122,8 @@ func TestIsTag(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
 			got := fragments.IsTag(tt.tagValue)
 			if got != tt.want {
 				t.Errorf("IsTag(%q) = %v, want %v", tt.tagValue, got, tt.want)
@@ -125,6 +133,8 @@ func TestIsTag(t *testing.T) {
 }
 
 func TestExtractTypename(t *testing.T) {
+	t.Parallel()
+
 	tests := []struct {
 		name     string
 		tagValue string
@@ -179,6 +189,8 @@ func TestExtractTypename(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
 			got := fragments.ExtractTypename(tt.tagValue)
 			if got != tt.want {
 				t.Errorf(

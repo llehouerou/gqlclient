@@ -35,6 +35,8 @@ type slugCardInner struct {
 }
 
 func TestUnmarshalGraphQL_GraphQLTypeWithArgsMatchesBareKey(t *testing.T) {
+	t.Parallel()
+
 	type payload struct {
 		Card slugCardWrapper[slugCardInner]
 	}
@@ -65,6 +67,8 @@ func (w aliasedCardWrapper) GetGraphQLWrapped() slugCardInner {
 }
 
 func TestUnmarshalGraphQL_GraphQLTypeWithAliasMatchesAlias(t *testing.T) {
+	t.Parallel()
+
 	type payload struct {
 		Card aliasedCardWrapper
 	}

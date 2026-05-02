@@ -12,6 +12,8 @@ import (
 )
 
 func TestUnmarshalGraphQL_benchmark(t *testing.T) {
+	t.Parallel()
+
 	/*
 		query {
 			viewer {

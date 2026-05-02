@@ -9,9 +9,13 @@ import (
 
 // TestFindFieldsForKey tests the findFieldsForKey helper method
 func TestFindFieldsForKey(t *testing.T) {
+	t.Parallel()
+
 	rawMessageValue := reflect.ValueOf(json.RawMessage{})
 
 	t.Run("finds struct field by name", func(t *testing.T) {
+		t.Parallel()
+
 		type testStruct struct {
 			Name string
 			Age  int
@@ -48,6 +52,8 @@ func TestFindFieldsForKey(t *testing.T) {
 	})
 
 	t.Run("finds field with graphql tag", func(t *testing.T) {
+		t.Parallel()
+
 		type testStruct struct {
 			UserName string `graphql:"name"`
 		}
@@ -67,6 +73,8 @@ func TestFindFieldsForKey(t *testing.T) {
 	})
 
 	t.Run("detects scalar field", func(t *testing.T) {
+		t.Parallel()
+
 		type testStruct struct {
 			Data string `scalar:"true"`
 		}
@@ -86,6 +94,8 @@ func TestFindFieldsForKey(t *testing.T) {
 	})
 
 	t.Run("detects json.RawMessage field", func(t *testing.T) {
+		t.Parallel()
+
 		type testStruct struct {
 			Data json.RawMessage
 		}
@@ -105,6 +115,8 @@ func TestFindFieldsForKey(t *testing.T) {
 	})
 
 	t.Run("handles wrapper types", func(t *testing.T) {
+		t.Parallel()
+
 		type StringWrapper struct {
 			Value string
 		}
@@ -129,6 +141,8 @@ func TestFindFieldsForKey(t *testing.T) {
 	})
 
 	t.Run("handles ordered map (slice of pairs)", func(t *testing.T) {
+		t.Parallel()
+
 		target := [][2]interface{}{
 			{"name", new(string)},
 			{"age", new(int)},
@@ -148,6 +162,8 @@ func TestFindFieldsForKey(t *testing.T) {
 	})
 
 	t.Run("fragment matching when typename matches", func(t *testing.T) {
+		t.Parallel()
+
 		type testStruct struct {
 			Name string
 		}
@@ -171,6 +187,8 @@ func TestFindFieldsForKey(t *testing.T) {
 	})
 
 	t.Run("fragment no match when typename differs", func(t *testing.T) {
+		t.Parallel()
+
 		type testStruct struct {
 			Name string
 		}
@@ -194,6 +212,8 @@ func TestFindFieldsForKey(t *testing.T) {
 	})
 
 	t.Run("handles multiple stacks with mixed validity", func(t *testing.T) {
+		t.Parallel()
+
 		type struct1 struct {
 			Name string
 		}
@@ -228,6 +248,8 @@ func TestFindFieldsForKey(t *testing.T) {
 	})
 
 	t.Run("unwraps pointers and interfaces", func(t *testing.T) {
+		t.Parallel()
+
 		type testStruct struct {
 			Name string
 		}
@@ -251,7 +273,11 @@ func TestFindFieldsForKey(t *testing.T) {
 
 // TestSelectAndPushFields tests the selectAndPushFields helper method
 func TestSelectAndPushFields(t *testing.T) {
+	t.Parallel()
+
 	t.Run("pushes valid fields to stacks", func(t *testing.T) {
+		t.Parallel()
+
 		type testStruct struct {
 			Name string
 		}
@@ -283,6 +309,8 @@ func TestSelectAndPushFields(t *testing.T) {
 	})
 
 	t.Run("detects scalar field", func(t *testing.T) {
+		t.Parallel()
+
 		type testStruct struct {
 			Name string
 		}
@@ -310,6 +338,8 @@ func TestSelectAndPushFields(t *testing.T) {
 	t.Run(
 		"filters non-matching fragments when matching fragment exists",
 		func(t *testing.T) {
+			t.Parallel()
+
 			type testStruct struct {
 				Name string
 			}
@@ -341,6 +371,8 @@ func TestSelectAndPushFields(t *testing.T) {
 	t.Run(
 		"keeps non-matching fragment field when no matching fragment has it",
 		func(t *testing.T) {
+			t.Parallel()
+
 			type testStruct struct {
 				Name string
 			}
@@ -370,6 +402,8 @@ func TestSelectAndPushFields(t *testing.T) {
 	)
 
 	t.Run("handles multiple stacks", func(t *testing.T) {
+		t.Parallel()
+
 		type struct1 struct {
 			Name string
 		}
@@ -407,6 +441,8 @@ func TestSelectAndPushFields(t *testing.T) {
 	})
 
 	t.Run("returns false when no valid fields exist", func(t *testing.T) {
+		t.Parallel()
+
 		d := &decoder{
 			vs: valueStack{
 				values: []stack{
@@ -430,7 +466,11 @@ func TestSelectAndPushFields(t *testing.T) {
 
 // TestReadNextToken tests the readNextToken helper method
 func TestReadNextToken(t *testing.T) {
+	t.Parallel()
+
 	t.Run("reads raw message for scalar field", func(t *testing.T) {
+		t.Parallel()
+
 		jsonData := `{"nested": "value"}`
 		dec := json.NewDecoder(bytes.NewReader([]byte(jsonData)))
 		dec.UseNumber()
@@ -455,6 +495,8 @@ func TestReadNextToken(t *testing.T) {
 	})
 
 	t.Run("reads raw message for rawMessage field", func(t *testing.T) {
+		t.Parallel()
+
 		jsonData := `{"nested": "value"}`
 		dec := json.NewDecoder(bytes.NewReader([]byte(jsonData)))
 		dec.UseNumber()
@@ -479,6 +521,8 @@ func TestReadNextToken(t *testing.T) {
 	})
 
 	t.Run("reads next token for regular field - string", func(t *testing.T) {
+		t.Parallel()
+
 		jsonData := `"hello"`
 		dec := json.NewDecoder(bytes.NewReader([]byte(jsonData)))
 		dec.UseNumber()
@@ -502,6 +546,8 @@ func TestReadNextToken(t *testing.T) {
 	})
 
 	t.Run("reads next token for regular field - number", func(t *testing.T) {
+		t.Parallel()
+
 		jsonData := `42`
 		dec := json.NewDecoder(bytes.NewReader([]byte(jsonData)))
 		dec.UseNumber()
@@ -525,6 +571,8 @@ func TestReadNextToken(t *testing.T) {
 	})
 
 	t.Run("reads next token for regular field - boolean", func(t *testing.T) {
+		t.Parallel()
+
 		jsonData := `true`
 		dec := json.NewDecoder(bytes.NewReader([]byte(jsonData)))
 		dec.UseNumber()
@@ -548,6 +596,8 @@ func TestReadNextToken(t *testing.T) {
 	})
 
 	t.Run("reads next token for regular field - null", func(t *testing.T) {
+		t.Parallel()
+
 		jsonData := `null`
 		dec := json.NewDecoder(bytes.NewReader([]byte(jsonData)))
 		dec.UseNumber()
@@ -569,6 +619,8 @@ func TestReadNextToken(t *testing.T) {
 	t.Run(
 		"reads next token for regular field - object delimiter",
 		func(t *testing.T) {
+			t.Parallel()
+
 			jsonData := `{`
 			dec := json.NewDecoder(bytes.NewReader([]byte(jsonData)))
 			dec.UseNumber()
@@ -595,6 +647,8 @@ func TestReadNextToken(t *testing.T) {
 	t.Run(
 		"reads next token for regular field - array delimiter",
 		func(t *testing.T) {
+			t.Parallel()
+
 			jsonData := `[`
 			dec := json.NewDecoder(bytes.NewReader([]byte(jsonData)))
 			dec.UseNumber()
@@ -619,6 +673,8 @@ func TestReadNextToken(t *testing.T) {
 	)
 
 	t.Run("returns error on EOF for regular field", func(t *testing.T) {
+		t.Parallel()
+
 		jsonData := ``
 		dec := json.NewDecoder(bytes.NewReader([]byte(jsonData)))
 		dec.UseNumber()
@@ -639,6 +695,8 @@ func TestReadNextToken(t *testing.T) {
 	t.Run(
 		"returns error on decode failure for raw/scalar field",
 		func(t *testing.T) {
+			t.Parallel()
+
 			jsonData := `{invalid`
 			dec := json.NewDecoder(bytes.NewReader([]byte(jsonData)))
 			dec.UseNumber()

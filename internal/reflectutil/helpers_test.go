@@ -6,6 +6,8 @@ import (
 )
 
 func TestIsTrue(t *testing.T) {
+	t.Parallel()
+
 	tests := []struct {
 		name     string
 		input    string
@@ -38,6 +40,8 @@ func TestIsTrue(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
 			result := IsTrue(tt.input)
 			if result != tt.expected {
 				t.Errorf(
@@ -52,6 +56,8 @@ func TestIsTrue(t *testing.T) {
 }
 
 func TestIsIntegerKind(t *testing.T) {
+	t.Parallel()
+
 	tests := []struct {
 		name     string
 		kind     reflect.Kind
@@ -90,6 +96,8 @@ func TestIsIntegerKind(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
 			result := IsIntegerKind(tt.kind)
 			if result != tt.expected {
 				t.Errorf(

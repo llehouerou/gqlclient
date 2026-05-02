@@ -36,7 +36,14 @@ make vet                # go vet ./...
   inline rather than disabling the linter globally.
 - **Tests**: TDD when fixing bugs — write the failing test first, then
   the fix. `synctest` is preferred over `time.After` for timing-sensitive
-  tests (Go 1.25+).
+  tests (Go 1.25+). All tests call `t.Parallel()` (top-level and
+  subtests) — `paralleltest` enforces this in lint. If you add a test
+  that genuinely cannot be parallel (env mutation, working-directory
+  changes), document the reason inline.
+- **Fuzzing**: `FuzzUnmarshalGraphQL` lives in `internal/decode` and
+  exercises the custom JSON decoder. Run with
+  `go test ./internal/decode -fuzz=FuzzUnmarshalGraphQL -fuzztime=30s`
+  before sending changes that touch the decoder.
 - **API stability**: pre-1.0. Breaking changes are recorded under the
   `Unreleased` heading in `CHANGELOG.md`.
 

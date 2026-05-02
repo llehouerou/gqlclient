@@ -13,6 +13,17 @@ All notable changes to this project are documented in this file.
   before `WithRequestModifier`, so a modifier can still override.
 - Runnable godoc examples in `example_test.go` (visible on pkg.go.dev)
   for `NewClient`, `Query`, and each `With*` method.
+- `FuzzUnmarshalGraphQL` (in `internal/decode`) — coverage-guided fuzz
+  test for the custom JSON decoder, exercising struct, fragment, and
+  ordered-map targets. Run with
+  `go test ./internal/decode -fuzz=FuzzUnmarshalGraphQL -fuzztime=30s`.
+
+### Internal
+
+- All test functions and subtests now call `t.Parallel()`. The test
+  suite was audited for shared mutable state (no `t.Setenv`, no
+  package-level test mutation, all fixtures read-only) and confirmed
+  safe to parallelize. Wall-clock test time drops accordingly.
 
 ### Breaking changes
 

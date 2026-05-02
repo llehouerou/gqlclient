@@ -45,6 +45,8 @@ type RegularStruct struct {
 }
 
 func TestImplementsGraphQLType(t *testing.T) {
+	t.Parallel()
+
 	tests := []struct {
 		name     string
 		typ      reflect.Type
@@ -79,6 +81,8 @@ func TestImplementsGraphQLType(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
 			result := ImplementsGraphQLType(tt.typ)
 			if result != tt.expected {
 				t.Errorf(
@@ -92,6 +96,8 @@ func TestImplementsGraphQLType(t *testing.T) {
 }
 
 func TestIsWrapperType(t *testing.T) {
+	t.Parallel()
+
 	wrapper := TestWrapper[string]{Value: "test"}
 	pointerWrapper := &TestWrapper[int]{Value: 42}
 	noValueField := TestWrapperNoValueField{Data: "test"}
@@ -141,6 +147,8 @@ func TestIsWrapperType(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
 			result := IsWrapperType(tt.value)
 			if result != tt.expected {
 				t.Errorf("IsWrapperType() = %v, want %v", result, tt.expected)
@@ -150,6 +158,8 @@ func TestIsWrapperType(t *testing.T) {
 }
 
 func TestUnwrapValue(t *testing.T) {
+	t.Parallel()
+
 	wrapper := TestWrapper[string]{Value: "test"}
 	pointerWrapper := &TestWrapper[int]{Value: 42}
 	regular := RegularStruct{Field: "test"}
@@ -194,6 +204,8 @@ func TestUnwrapValue(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
 			result := UnwrapValue(tt.value)
 			if result.IsValid() != tt.wantValid {
 				t.Errorf(
@@ -214,6 +226,8 @@ func TestUnwrapValue(t *testing.T) {
 }
 
 func TestUnwrapValueField(t *testing.T) {
+	t.Parallel()
+
 	wrapper := TestWrapper[string]{Value: "test"}
 	pointerWrapper := &TestWrapper[int]{Value: 42}
 	regular := RegularStruct{Field: "test"}
@@ -258,6 +272,8 @@ func TestUnwrapValueField(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
 			result := UnwrapValueField(tt.value)
 			if result.IsValid() != tt.wantValid {
 				t.Errorf(
@@ -278,6 +294,8 @@ func TestUnwrapValueField(t *testing.T) {
 }
 
 func TestUnwrapValueOrOriginal(t *testing.T) {
+	t.Parallel()
+
 	wrapper := TestWrapper[string]{Value: "test"}
 	regular := RegularStruct{Field: "test"}
 
@@ -300,6 +318,8 @@ func TestUnwrapValueOrOriginal(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
 			result := UnwrapValueOrOriginal(tt.value)
 			if !result.IsValid() {
 				t.Error("UnwrapValueOrOriginal() returned invalid value")
@@ -316,6 +336,8 @@ func TestUnwrapValueOrOriginal(t *testing.T) {
 }
 
 func TestGetGraphQLType(t *testing.T) {
+	t.Parallel()
+
 	customType := CustomType{Data: "test"}
 	customPointerType := &CustomPointerType{Data: "test"}
 	regular := RegularStruct{Field: "test"}
@@ -359,6 +381,8 @@ func TestGetGraphQLType(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
 			typeName, ok := GetGraphQLType(tt.value, tt.typ)
 			if ok != tt.wantOk {
 				t.Errorf("GetGraphQLType() ok = %v, want %v", ok, tt.wantOk)
@@ -375,6 +399,8 @@ func TestGetGraphQLType(t *testing.T) {
 }
 
 func TestGetGraphQLTypeFromType(t *testing.T) {
+	t.Parallel()
+
 	tests := []struct {
 		name         string
 		typ          reflect.Type
@@ -409,6 +435,8 @@ func TestGetGraphQLTypeFromType(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
 			typeName, ok := GetGraphQLTypeFromType(tt.typ)
 			if ok != tt.wantOk {
 				t.Errorf("GetGraphQLTypeFromType() ok = %v, want %v", ok, tt.wantOk)
@@ -434,6 +462,8 @@ func (w NestedWrapper) GetGraphQLWrapped() TestWrapper[string] {
 }
 
 func TestUnwrapValue_deeplyNested(t *testing.T) {
+	t.Parallel()
+
 	// Test deeply nested wrappers
 	innerWrapper := TestWrapper[string]{Value: "deep"}
 	outerWrapper := NestedWrapper{Value: innerWrapper}
@@ -455,6 +485,8 @@ func TestUnwrapValue_deeplyNested(t *testing.T) {
 }
 
 func TestUnwrapValue_interfaceWrapper(t *testing.T) {
+	t.Parallel()
+
 	// Test unwrapping through interface type
 	wrapper := TestWrapper[string]{Value: "test"}
 	var iface any = wrapper
@@ -470,6 +502,8 @@ func TestUnwrapValue_interfaceWrapper(t *testing.T) {
 }
 
 func TestUnwrapValueField_noValueField(t *testing.T) {
+	t.Parallel()
+
 	// Test wrapper without a Value field
 	wrapper := TestWrapperNoValueField{Data: "test"}
 
@@ -483,6 +517,8 @@ func TestUnwrapValueField_noValueField(t *testing.T) {
 }
 
 func TestUnwrapValue_multiLevelPointer(t *testing.T) {
+	t.Parallel()
+
 	// Test multi-level pointer unwrapping
 	wrapper := TestWrapper[int]{Value: 99}
 	ptr1 := &wrapper
@@ -499,6 +535,8 @@ func TestUnwrapValue_multiLevelPointer(t *testing.T) {
 }
 
 func TestGetGraphQLType_nilValue(t *testing.T) {
+	t.Parallel()
+
 	// Test GetGraphQLType with nil value
 	var nilPtr *CustomPointerType
 	v := reflect.ValueOf(nilPtr)
@@ -513,6 +551,8 @@ func TestGetGraphQLType_nilValue(t *testing.T) {
 }
 
 func TestGetGraphQLType_interfaceValue(t *testing.T) {
+	t.Parallel()
+
 	// Test GetGraphQLType with value wrapped in interface
 	custom := CustomType{Data: "test"}
 	var iface any = custom
@@ -542,6 +582,8 @@ func (w WrapperWithNoResults) GetGraphQLWrapped() {
 }
 
 func TestUnwrapValue_methodReturnsNoResults(t *testing.T) {
+	t.Parallel()
+
 	// Edge case: GetGraphQLWrapped method exists but returns no values
 	wrapper := WrapperWithNoResults{Value: "test"}
 	v := reflect.ValueOf(wrapper)
@@ -556,6 +598,8 @@ func TestUnwrapValue_methodReturnsNoResults(t *testing.T) {
 }
 
 func TestIsWrapperType_interfaceContainingNil(t *testing.T) {
+	t.Parallel()
+
 	// Edge case: interface{} containing a nil pointer to a wrapper type
 	var wrapper *TestWrapper[string] = nil
 	var iface any = wrapper
@@ -568,6 +612,8 @@ func TestIsWrapperType_interfaceContainingNil(t *testing.T) {
 }
 
 func TestIsWrapperType_invalidValue(t *testing.T) {
+	t.Parallel()
+
 	// Edge case: completely invalid reflect.Value
 	var v reflect.Value // zero value, invalid
 
@@ -578,6 +624,8 @@ func TestIsWrapperType_invalidValue(t *testing.T) {
 }
 
 func TestUnwrapValue_becomesInvalidAfterUnwrap(t *testing.T) {
+	t.Parallel()
+
 	// Edge case: After unwrapping pointers, the value becomes invalid
 	// This is hard to trigger naturally, but we can test with deeply nested nil pointers
 	var ptr *TestWrapper[string] = nil
@@ -597,6 +645,8 @@ func TestUnwrapValue_becomesInvalidAfterUnwrap(t *testing.T) {
 }
 
 func TestUnwrapValueField_becomesInvalidAfterUnwrap(t *testing.T) {
+	t.Parallel()
+
 	// Edge case: pointer to nil wrapper for UnwrapValueField
 	var ptr *TestWrapper[string] = nil
 	ptrToPtr := &ptr
@@ -612,6 +662,8 @@ func TestUnwrapValueField_becomesInvalidAfterUnwrap(t *testing.T) {
 }
 
 func TestIsWrapperType_nilInterfaceValue(t *testing.T) {
+	t.Parallel()
+
 	// Edge case: nil interface value
 	var iface any = nil
 	v := reflect.ValueOf(iface)
@@ -623,6 +675,8 @@ func TestIsWrapperType_nilInterfaceValue(t *testing.T) {
 }
 
 func TestUnwrapValue_methodNotValid(t *testing.T) {
+	t.Parallel()
+
 	// Edge case: struct that IsWrapperType thinks is valid, but method becomes invalid
 	// This tests the defensive check at line 177-179
 	// Using a non-wrapper struct to ensure method lookup fails

@@ -9,7 +9,11 @@ import (
 // TestNewID tests the NewID and ToID helper functions for the ID type.
 // ID is the only actively supported custom scalar type.
 func TestNewID(t *testing.T) {
+	t.Parallel()
+
 	t.Run("string input", func(t *testing.T) {
+		t.Parallel()
+
 		got := graphql.NewID("")
 		if got == nil {
 			t.Fatal("NewID returned nil for empty string")
@@ -25,6 +29,8 @@ func TestNewID(t *testing.T) {
 	})
 
 	t.Run("integer input", func(t *testing.T) {
+		t.Parallel()
+
 		got := graphql.NewID(0)
 		if got == nil {
 			t.Fatal("NewID returned nil for integer 0")
@@ -45,6 +51,8 @@ func TestNewID(t *testing.T) {
 
 // TestToID tests the ToID conversion function.
 func TestToID(t *testing.T) {
+	t.Parallel()
+
 	tests := []struct {
 		name  string
 		input any
@@ -61,6 +69,8 @@ func TestToID(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
 			got := graphql.ToID(tt.input)
 			if got != tt.want {
 				t.Errorf("ToID(%v) = %q, want %q", tt.input, got, tt.want)

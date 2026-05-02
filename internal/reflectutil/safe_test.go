@@ -6,6 +6,8 @@ import (
 )
 
 func TestIndexSafe(t *testing.T) {
+	t.Parallel()
+
 	tests := []struct {
 		name      string
 		value     reflect.Value
@@ -62,6 +64,8 @@ func TestIndexSafe(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
 			got := IndexSafe(tt.value, tt.index)
 			if got.IsValid() != tt.wantValid {
 				t.Errorf(
@@ -83,6 +87,8 @@ func TestIndexSafe(t *testing.T) {
 }
 
 func TestElemSafe(t *testing.T) {
+	t.Parallel()
+
 	intValue := 42
 	strValue := "hello"
 
@@ -118,6 +124,8 @@ func TestElemSafe(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
 			got := ElemSafe(tt.value)
 			if got.IsValid() != tt.wantValid {
 				t.Errorf(
@@ -135,6 +143,8 @@ func TestElemSafe(t *testing.T) {
 }
 
 func TestFieldSafe(t *testing.T) {
+	t.Parallel()
+
 	type testStruct struct {
 		Field1 string
 		Field2 int
@@ -185,6 +195,8 @@ func TestFieldSafe(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
 			got := FieldSafe(tt.value, tt.index)
 			if got.IsValid() != tt.wantValid {
 				t.Errorf(
@@ -206,6 +218,8 @@ func TestFieldSafe(t *testing.T) {
 }
 
 func TestIsNillable(t *testing.T) {
+	t.Parallel()
+
 	tests := []struct {
 		name string
 		kind reflect.Kind
@@ -243,6 +257,8 @@ func TestIsNillable(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
 			if got := IsNillable(tt.kind); got != tt.want {
 				t.Errorf("IsNillable(%v) = %v, want %v", tt.kind, got, tt.want)
 			}
@@ -251,6 +267,8 @@ func TestIsNillable(t *testing.T) {
 }
 
 func TestUnwrapToConcreteValue(t *testing.T) {
+	t.Parallel()
+
 	intValue := 42
 	strValue := "hello"
 	intPtr := &intValue
@@ -310,6 +328,8 @@ func TestUnwrapToConcreteValue(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
 			got := UnwrapToConcreteValue(tt.value)
 			if got.IsValid() != tt.wantValid {
 				t.Errorf(
@@ -340,6 +360,8 @@ func TestUnwrapToConcreteValue(t *testing.T) {
 }
 
 func TestIsNilValue(t *testing.T) {
+	t.Parallel()
+
 	intValue := 42
 	var nilPtr *int
 	var nilSlice []int
@@ -447,6 +469,8 @@ func TestIsNilValue(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
 			if got := IsNilValue(tt.value); got != tt.want {
 				t.Errorf("IsNilValue() = %v, want %v", got, tt.want)
 			}
@@ -455,9 +479,13 @@ func TestIsNilValue(t *testing.T) {
 }
 
 func TestUnwrapToConcreteValue_Integration(t *testing.T) {
+	t.Parallel()
+
 	// This test shows how UnwrapToConcreteValue and IsNilValue work together,
 	// which is a common pattern in the codebase
 	t.Run("unwrap and check nil on valid pointer", func(t *testing.T) {
+		t.Parallel()
+
 		val := 42
 		ptr := &val
 		v := reflect.ValueOf(ptr)
@@ -476,6 +504,8 @@ func TestUnwrapToConcreteValue_Integration(t *testing.T) {
 	})
 
 	t.Run("unwrap and check nil on nil pointer", func(t *testing.T) {
+		t.Parallel()
+
 		var ptr *int
 		v := reflect.ValueOf(ptr)
 
@@ -491,6 +521,8 @@ func TestUnwrapToConcreteValue_Integration(t *testing.T) {
 	})
 
 	t.Run("create pointer and unwrap", func(t *testing.T) {
+		t.Parallel()
+
 		// Create a new pointer using NewZeroOrPointerValue
 		typ := reflect.TypeOf((*string)(nil))
 		v := NewZeroOrPointerValue(typ)
@@ -510,6 +542,8 @@ func TestUnwrapToConcreteValue_Integration(t *testing.T) {
 }
 
 func TestNewZeroOrPointerValue(t *testing.T) {
+	t.Parallel()
+
 	tests := []struct {
 		name     string
 		typ      reflect.Type
@@ -641,6 +675,8 @@ func TestNewZeroOrPointerValue(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
 			got := NewZeroOrPointerValue(tt.typ)
 			if !got.IsValid() {
 				t.Fatal("NewZeroOrPointerValue() returned invalid value")

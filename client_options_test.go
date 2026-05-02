@@ -34,6 +34,8 @@ func runViewerQuery(t *testing.T, c *graphql.Client) {
 }
 
 func TestWithHeader_setsHeader(t *testing.T) {
+	t.Parallel()
+
 	var got http.Header
 	srv := recordingServer(t, &got)
 
@@ -47,6 +49,8 @@ func TestWithHeader_setsHeader(t *testing.T) {
 }
 
 func TestWithHeader_lastWriteWins(t *testing.T) {
+	t.Parallel()
+
 	var got http.Header
 	srv := recordingServer(t, &got)
 
@@ -61,6 +65,8 @@ func TestWithHeader_lastWriteWins(t *testing.T) {
 }
 
 func TestWithHeader_immutability(t *testing.T) {
+	t.Parallel()
+
 	original := graphql.NewClient("http://example.invalid", nil)
 	modified := original.WithHeader("X-Foo", "bar")
 	if original == modified {
@@ -74,6 +80,8 @@ func TestWithHeader_immutability(t *testing.T) {
 }
 
 func TestWithHeaders_mergesExisting(t *testing.T) {
+	t.Parallel()
+
 	var got http.Header
 	srv := recordingServer(t, &got)
 
@@ -94,6 +102,8 @@ func TestWithHeaders_mergesExisting(t *testing.T) {
 }
 
 func TestWithHeaders_nilIsNoop(t *testing.T) {
+	t.Parallel()
+
 	original := graphql.NewClient("http://example.invalid", nil).
 		WithHeader("X-Foo", "bar")
 	modified := original.WithHeaders(nil)
@@ -105,6 +115,8 @@ func TestWithHeaders_nilIsNoop(t *testing.T) {
 }
 
 func TestWithUserAgent(t *testing.T) {
+	t.Parallel()
+
 	var got http.Header
 	srv := recordingServer(t, &got)
 
@@ -117,6 +129,8 @@ func TestWithUserAgent(t *testing.T) {
 }
 
 func TestWithHTTPClient_replacesTransport(t *testing.T) {
+	t.Parallel()
+
 	var calls int
 	rt := roundTripperFunc(func(req *http.Request) (*http.Response, error) {
 		calls++
@@ -143,6 +157,8 @@ func TestWithHTTPClient_replacesTransport(t *testing.T) {
 }
 
 func TestWithHTTPClient_nilFallsBackToDefault(t *testing.T) {
+	t.Parallel()
+
 	original := graphql.NewClient("http://example.invalid", nil)
 	modified := original.WithHTTPClient(nil)
 	// We can't easily inspect the field; just verify a new instance was returned.
@@ -152,6 +168,8 @@ func TestWithHTTPClient_nilFallsBackToDefault(t *testing.T) {
 }
 
 func TestWithRequestModifier_overridesClientHeader(t *testing.T) {
+	t.Parallel()
+
 	var got http.Header
 	srv := recordingServer(t, &got)
 

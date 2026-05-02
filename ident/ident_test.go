@@ -27,6 +27,8 @@ func Example_mixedCapsToLowerCamelCase() {
 }
 
 func TestParseMixedCaps(t *testing.T) {
+	t.Parallel()
+
 	tests := []struct {
 		in   string
 		want ident.Name
@@ -52,6 +54,8 @@ func TestParseMixedCaps(t *testing.T) {
 }
 
 func TestParseLowerCamelCase(t *testing.T) {
+	t.Parallel()
+
 	tests := []struct {
 		in   string
 		want ident.Name
@@ -67,6 +71,8 @@ func TestParseLowerCamelCase(t *testing.T) {
 }
 
 func TestParseScreamingSnakeCase(t *testing.T) {
+	t.Parallel()
+
 	tests := []struct {
 		in   string
 		want ident.Name
@@ -82,6 +88,8 @@ func TestParseScreamingSnakeCase(t *testing.T) {
 }
 
 func TestName_ToMixedCaps(t *testing.T) {
+	t.Parallel()
+
 	tests := []struct {
 		in   ident.Name
 		want string
@@ -99,6 +107,8 @@ func TestName_ToMixedCaps(t *testing.T) {
 }
 
 func TestName_ToLowerCamelCase(t *testing.T) {
+	t.Parallel()
+
 	tests := []struct {
 		in   ident.Name
 		want string
@@ -115,6 +125,8 @@ func TestName_ToLowerCamelCase(t *testing.T) {
 }
 
 func TestMixedCapsToLowerCamelCase(t *testing.T) {
+	t.Parallel()
+
 	tests := []struct {
 		in   string
 		want string
@@ -140,6 +152,8 @@ func TestMixedCapsToLowerCamelCase(t *testing.T) {
 }
 
 func TestLowerCamelCaseToMixedCaps(t *testing.T) {
+	t.Parallel()
+
 	tests := []struct {
 		in   string
 		want string

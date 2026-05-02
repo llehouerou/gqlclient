@@ -31,6 +31,8 @@ func addressableOf[T any](v T) reflect.Value {
 }
 
 func TestFastUnmarshal_StringIntoString(t *testing.T) {
+	t.Parallel()
+
 	v := addressableOf("")
 	handled, err := fastUnmarshal("hello", v)
 	if !handled || err != nil {
@@ -42,6 +44,8 @@ func TestFastUnmarshal_StringIntoString(t *testing.T) {
 }
 
 func TestFastUnmarshal_StringIntoNamedString(t *testing.T) {
+	t.Parallel()
+
 	var s namedString
 	v := reflect.ValueOf(&s).Elem()
 	handled, err := fastUnmarshal("OPEN", v)
@@ -54,6 +58,8 @@ func TestFastUnmarshal_StringIntoNamedString(t *testing.T) {
 }
 
 func TestFastUnmarshal_StringIntoPointer(t *testing.T) {
+	t.Parallel()
+
 	var p *string
 	v := reflect.ValueOf(&p).Elem()
 	handled, err := fastUnmarshal("hi", v)
@@ -66,6 +72,8 @@ func TestFastUnmarshal_StringIntoPointer(t *testing.T) {
 }
 
 func TestFastUnmarshal_StringIntoNonStringDeclines(t *testing.T) {
+	t.Parallel()
+
 	var i int
 	v := reflect.ValueOf(&i).Elem()
 	handled, _ := fastUnmarshal("hi", v)
@@ -75,6 +83,8 @@ func TestFastUnmarshal_StringIntoNonStringDeclines(t *testing.T) {
 }
 
 func TestFastUnmarshal_BoolIntoBool(t *testing.T) {
+	t.Parallel()
+
 	v := addressableOf(false)
 	handled, err := fastUnmarshal(true, v)
 	if !handled || err != nil {
@@ -86,6 +96,8 @@ func TestFastUnmarshal_BoolIntoBool(t *testing.T) {
 }
 
 func TestFastUnmarshal_BoolIntoPointer(t *testing.T) {
+	t.Parallel()
+
 	var p *bool
 	v := reflect.ValueOf(&p).Elem()
 	handled, err := fastUnmarshal(true, v)
@@ -98,6 +110,8 @@ func TestFastUnmarshal_BoolIntoPointer(t *testing.T) {
 }
 
 func TestFastUnmarshal_NumberIntoIntKinds(t *testing.T) {
+	t.Parallel()
+
 	var i64 int64
 	v := reflect.ValueOf(&i64).Elem()
 	handled, err := fastUnmarshal(json.Number("42"), v)
@@ -120,6 +134,8 @@ func TestFastUnmarshal_NumberIntoIntKinds(t *testing.T) {
 }
 
 func TestFastUnmarshal_NumberIntoUintKinds(t *testing.T) {
+	t.Parallel()
+
 	var u8 namedUint8
 	v := reflect.ValueOf(&u8).Elem()
 	handled, err := fastUnmarshal(json.Number("200"), v)
@@ -132,6 +148,8 @@ func TestFastUnmarshal_NumberIntoUintKinds(t *testing.T) {
 }
 
 func TestFastUnmarshal_NumberIntoFloat(t *testing.T) {
+	t.Parallel()
+
 	var f namedFloat64
 	v := reflect.ValueOf(&f).Elem()
 	handled, err := fastUnmarshal(json.Number("3.14"), v)
@@ -144,6 +162,8 @@ func TestFastUnmarshal_NumberIntoFloat(t *testing.T) {
 }
 
 func TestFastUnmarshal_NumberIntoJSONNumberPreservesString(t *testing.T) {
+	t.Parallel()
+
 	var n json.Number
 	v := reflect.ValueOf(&n).Elem()
 	handled, err := fastUnmarshal(
@@ -158,6 +178,8 @@ func TestFastUnmarshal_NumberIntoJSONNumberPreservesString(t *testing.T) {
 }
 
 func TestFastUnmarshal_IntOverflowReportsErrorNotFallthrough(t *testing.T) {
+	t.Parallel()
+
 	// A 999 token cannot fit in int8. fastUnmarshal must surface the
 	// error rather than declining (which would silently re-error from
 	// the slow path with a more cryptic message).
@@ -173,6 +195,8 @@ func TestFastUnmarshal_IntOverflowReportsErrorNotFallthrough(t *testing.T) {
 }
 
 func TestFastUnmarshal_UintOverflow(t *testing.T) {
+	t.Parallel()
+
 	var u uint8
 	v := reflect.ValueOf(&u).Elem()
 	handled, err := fastUnmarshal(json.Number("256"), v)
@@ -183,6 +207,8 @@ func TestFastUnmarshal_UintOverflow(t *testing.T) {
 }
 
 func TestFastUnmarshal_NegativeIntoUintDeclines(t *testing.T) {
+	t.Parallel()
+
 	// strconv.ParseUint("-1") fails; fast path must decline so the
 	// slow path can produce the canonical encoding/json error.
 	var u uint64
@@ -194,6 +220,8 @@ func TestFastUnmarshal_NegativeIntoUintDeclines(t *testing.T) {
 }
 
 func TestFastUnmarshal_FractionalIntoIntDeclines(t *testing.T) {
+	t.Parallel()
+
 	// 1.5 cannot ParseInt; defer to the slow path so the user sees
 	// the encoding/json error verbatim.
 	var i int64
@@ -205,6 +233,8 @@ func TestFastUnmarshal_FractionalIntoIntDeclines(t *testing.T) {
 }
 
 func TestFastUnmarshal_RawMessageDeclinesSoSlowPathCompacts(t *testing.T) {
+	t.Parallel()
+
 	// RawMessage is itself a json.Unmarshaler implementation and the
 	// existing semantics depend on json.Marshal compacting whitespace
 	// inside the value (see TestUnmarshalGraphQL_jsonRawTag). Fast
@@ -225,6 +255,8 @@ func TestFastUnmarshal_RawMessageDeclinesSoSlowPathCompacts(t *testing.T) {
 }
 
 func TestFastUnmarshal_NullZeroesScalar(t *testing.T) {
+	t.Parallel()
+
 	v := addressableOf("nonempty")
 	handled, err := fastUnmarshal(nil, v)
 	if !handled || err != nil {
@@ -236,6 +268,8 @@ func TestFastUnmarshal_NullZeroesScalar(t *testing.T) {
 }
 
 func TestFastUnmarshal_NullZeroesPointer(t *testing.T) {
+	t.Parallel()
+
 	s := "x"
 	p := &s
 	v := reflect.ValueOf(&p).Elem()
@@ -249,6 +283,8 @@ func TestFastUnmarshal_NullZeroesPointer(t *testing.T) {
 }
 
 func TestFastUnmarshal_NullIntoInterfaceDeclines(t *testing.T) {
+	t.Parallel()
+
 	var iface any
 	v := reflect.ValueOf(&iface).Elem()
 	handled, _ := fastUnmarshal(nil, v)
@@ -258,6 +294,8 @@ func TestFastUnmarshal_NullIntoInterfaceDeclines(t *testing.T) {
 }
 
 func TestFastUnmarshal_InterfaceTargetDeclines(t *testing.T) {
+	t.Parallel()
+
 	var iface any
 	v := reflect.ValueOf(&iface).Elem()
 	handled, _ := fastUnmarshal("hi", v)
@@ -267,6 +305,8 @@ func TestFastUnmarshal_InterfaceTargetDeclines(t *testing.T) {
 }
 
 func TestFastUnmarshal_JSONUnmarshalerDeclines(t *testing.T) {
+	t.Parallel()
+
 	// Custom UnmarshalJSON must win over the kind-based fast path.
 	// fastUnmarshal must decline so the slow path runs the user's
 	// UnmarshalJSON method.
@@ -281,6 +321,8 @@ func TestFastUnmarshal_JSONUnmarshalerDeclines(t *testing.T) {
 }
 
 func TestFastUnmarshal_PointerToJSONUnmarshalerDeclines(t *testing.T) {
+	t.Parallel()
+
 	var p *customUnmarshaler
 	v := reflect.ValueOf(&p).Elem()
 	handled, _ := fastUnmarshal("hi", v)
@@ -292,6 +334,8 @@ func TestFastUnmarshal_PointerToJSONUnmarshalerDeclines(t *testing.T) {
 }
 
 func TestImplementsJSONUnmarshalerCacheStable(t *testing.T) {
+	t.Parallel()
+
 	t1 := reflect.TypeOf(customUnmarshaler{})
 	t2 := reflect.TypeOf("")
 	if !implementsJSONUnmarshaler(t1) {

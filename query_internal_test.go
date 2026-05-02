@@ -9,7 +9,11 @@ import (
 
 // TestWriteArgumentsFromMap tests the writeArgumentsFromMap helper function
 func TestWriteArgumentsFromMap(t *testing.T) {
+	t.Parallel()
+
 	t.Run("empty map produces empty string", func(t *testing.T) {
+		t.Parallel()
+
 		var buf bytes.Buffer
 		writeArgumentsFromMap(&buf, map[string]any{})
 
@@ -19,6 +23,8 @@ func TestWriteArgumentsFromMap(t *testing.T) {
 	})
 
 	t.Run("single entry map", func(t *testing.T) {
+		t.Parallel()
+
 		var buf bytes.Buffer
 		writeArgumentsFromMap(&buf, map[string]any{
 			"id": 123,
@@ -31,6 +37,8 @@ func TestWriteArgumentsFromMap(t *testing.T) {
 	})
 
 	t.Run("multiple entries are sorted alphabetically", func(t *testing.T) {
+		t.Parallel()
+
 		var buf bytes.Buffer
 		writeArgumentsFromMap(&buf, map[string]any{
 			"zebra":  "test",
@@ -45,6 +53,8 @@ func TestWriteArgumentsFromMap(t *testing.T) {
 	})
 
 	t.Run("handles various Go types", func(t *testing.T) {
+		t.Parallel()
+
 		var buf bytes.Buffer
 		writeArgumentsFromMap(&buf, map[string]any{
 			"str":   "hello",
@@ -72,7 +82,11 @@ func TestWriteArgumentsFromMap(t *testing.T) {
 
 // TestCollectStructFieldsForArguments tests the collectStructFieldsForArguments helper function
 func TestCollectStructFieldsForArguments(t *testing.T) {
+	t.Parallel()
+
 	t.Run("collects fields with json tags", func(t *testing.T) {
+		t.Parallel()
+
 		type TestStruct struct {
 			Name string `json:"name"`
 			Age  int    `json:"age"`
@@ -97,6 +111,8 @@ func TestCollectStructFieldsForArguments(t *testing.T) {
 	})
 
 	t.Run("skips unexported fields", func(t *testing.T) {
+		t.Parallel()
+
 		type TestStruct struct {
 			Public  string `json:"public"`
 			private string //nolint:unused // Intentionally unexported for testing
@@ -115,6 +131,8 @@ func TestCollectStructFieldsForArguments(t *testing.T) {
 	})
 
 	t.Run("skips fields without json tags", func(t *testing.T) {
+		t.Parallel()
+
 		type TestStruct struct {
 			WithTag    string `json:"withTag"`
 			WithoutTag string
@@ -131,6 +149,8 @@ func TestCollectStructFieldsForArguments(t *testing.T) {
 	})
 
 	t.Run("skips fields with json:- tag", func(t *testing.T) {
+		t.Parallel()
+
 		type TestStruct struct {
 			Include string `json:"include"`
 			Exclude string `json:"-"`
@@ -147,6 +167,8 @@ func TestCollectStructFieldsForArguments(t *testing.T) {
 	})
 
 	t.Run("extracts field name from json tag with options", func(t *testing.T) {
+		t.Parallel()
+
 		type TestStruct struct {
 			Field string `json:"customName,omitempty"`
 		}
@@ -162,6 +184,8 @@ func TestCollectStructFieldsForArguments(t *testing.T) {
 	})
 
 	t.Run("skips fields with empty json name", func(t *testing.T) {
+		t.Parallel()
+
 		type TestStruct struct {
 			Field1 string `json:",omitempty"`
 			Field2 string `json:"valid"`
@@ -178,6 +202,8 @@ func TestCollectStructFieldsForArguments(t *testing.T) {
 	})
 
 	t.Run("handles pointer to struct", func(t *testing.T) {
+		t.Parallel()
+
 		type TestStruct struct {
 			Name string `json:"name"`
 		}
@@ -195,6 +221,8 @@ func TestCollectStructFieldsForArguments(t *testing.T) {
 	t.Run(
 		"returns empty slice for struct with no valid fields",
 		func(t *testing.T) {
+			t.Parallel()
+
 			type TestStruct struct {
 				unexported string `json:"unexported"` //nolint:unused,govet,staticcheck // intentionally unexported with json tag, asserts collector skips it
 				NoTag      string
@@ -209,6 +237,8 @@ func TestCollectStructFieldsForArguments(t *testing.T) {
 	)
 
 	t.Run("preserves field type information", func(t *testing.T) {
+		t.Parallel()
+
 		type TestStruct struct {
 			Str   string  `json:"str"`
 			Num   int     `json:"num"`
@@ -248,6 +278,8 @@ func TestCollectStructFieldsForArguments(t *testing.T) {
 	})
 
 	t.Run("preserves field values", func(t *testing.T) {
+		t.Parallel()
+
 		type TestStruct struct {
 			Name string `json:"name"`
 			Age  int    `json:"age"`
@@ -272,6 +304,8 @@ func TestCollectStructFieldsForArguments(t *testing.T) {
 	})
 
 	t.Run("panics on invalid type - string", func(t *testing.T) {
+		t.Parallel()
+
 		defer func() {
 			if r := recover(); r == nil {
 				t.Error("expected panic on string input")
@@ -282,6 +316,8 @@ func TestCollectStructFieldsForArguments(t *testing.T) {
 	})
 
 	t.Run("panics on invalid type - int", func(t *testing.T) {
+		t.Parallel()
+
 		defer func() {
 			if r := recover(); r == nil {
 				t.Error("expected panic on int input")
@@ -292,6 +328,8 @@ func TestCollectStructFieldsForArguments(t *testing.T) {
 	})
 
 	t.Run("panics on invalid type - slice", func(t *testing.T) {
+		t.Parallel()
+
 		defer func() {
 			if r := recover(); r == nil {
 				t.Error("expected panic on slice input")
@@ -304,7 +342,11 @@ func TestCollectStructFieldsForArguments(t *testing.T) {
 
 // TestWriteArgumentsFromFields tests the writeArgumentsFromFields helper function
 func TestWriteArgumentsFromFields(t *testing.T) {
+	t.Parallel()
+
 	t.Run("empty fields produces empty string", func(t *testing.T) {
+		t.Parallel()
+
 		var buf bytes.Buffer
 		writeArgumentsFromFields(&buf, []argumentFieldInfo{})
 
@@ -314,6 +356,8 @@ func TestWriteArgumentsFromFields(t *testing.T) {
 	})
 
 	t.Run("single field", func(t *testing.T) {
+		t.Parallel()
+
 		var buf bytes.Buffer
 		fields := []argumentFieldInfo{
 			{
@@ -332,6 +376,8 @@ func TestWriteArgumentsFromFields(t *testing.T) {
 	})
 
 	t.Run("multiple fields", func(t *testing.T) {
+		t.Parallel()
+
 		var buf bytes.Buffer
 		fields := []argumentFieldInfo{
 			{
@@ -360,6 +406,8 @@ func TestWriteArgumentsFromFields(t *testing.T) {
 	})
 
 	t.Run("handles pointer types (optional)", func(t *testing.T) {
+		t.Parallel()
+
 		var buf bytes.Buffer
 		var optionalInt *int
 		fields := []argumentFieldInfo{
@@ -398,6 +446,8 @@ func indexOf(s, substr string) int {
 
 // TestProcessStructField tests the processStructField helper function
 func TestProcessStructField(t *testing.T) {
+	t.Parallel()
+
 	tests := []struct {
 		name       string
 		field      reflect.StructField
@@ -470,6 +520,8 @@ func TestProcessStructField(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
 			output := processStructField(tt.field, tt.value)
 
 			if output.shouldSkip != tt.wantSkip {
@@ -487,7 +539,11 @@ func TestProcessStructField(t *testing.T) {
 
 // TestProcessStructField_scalar tests the scalar field handling specifically
 func TestProcessStructField_scalar(t *testing.T) {
+	t.Parallel()
+
 	t.Run("field with scalar tag", func(t *testing.T) {
+		t.Parallel()
+
 		field := reflect.StructField{
 			Name: "CustomDate",
 			Type: reflect.TypeOf(""),
@@ -509,6 +565,8 @@ func TestProcessStructField_scalar(t *testing.T) {
 	})
 
 	t.Run("field without scalar tag", func(t *testing.T) {
+		t.Parallel()
+
 		field := reflect.StructField{
 			Name: "NormalField",
 			Type: reflect.TypeOf(""),
@@ -525,7 +583,11 @@ func TestProcessStructField_scalar(t *testing.T) {
 
 // TestQuery_ErrorPath tests the error path in the query() function
 func TestQuery_ErrorPath(t *testing.T) {
+	t.Parallel()
+
 	t.Run("error from writeQuery is wrapped", func(t *testing.T) {
+		t.Parallel()
+
 		// Use a map type which is not supported and should cause an error
 		invalidQuery := map[string]string{"key": "value"}
 
@@ -551,7 +613,11 @@ func TestQuery_ErrorPath(t *testing.T) {
 
 // TestWriteQuery_MapError tests that maps produce an error
 func TestWriteQuery_MapError(t *testing.T) {
+	t.Parallel()
+
 	t.Run("map type produces error", func(t *testing.T) {
+		t.Parallel()
+
 		var buf bytes.Buffer
 		mapType := reflect.TypeOf(map[string]string{})
 		mapValue := reflect.ValueOf(map[string]string{"key": "value"})
@@ -572,7 +638,11 @@ func TestWriteQuery_MapError(t *testing.T) {
 
 // TestWriteSliceQuery_ErrorPath tests error handling in writeSliceQuery
 func TestWriteSliceQuery_ErrorPath(t *testing.T) {
+	t.Parallel()
+
 	t.Run("error from nested writeQuery is wrapped", func(t *testing.T) {
+		t.Parallel()
+
 		var buf bytes.Buffer
 		// Slice of maps - should error because maps are not supported
 		sliceType := reflect.TypeOf([]map[string]string{})
@@ -594,7 +664,11 @@ func TestWriteSliceQuery_ErrorPath(t *testing.T) {
 
 // TestWriteOrderedMapQuery_ErrorPath tests error handling in writeOrderedMapQuery
 func TestWriteOrderedMapQuery_ErrorPath(t *testing.T) {
+	t.Parallel()
+
 	t.Run("invalid array length produces error", func(t *testing.T) {
+		t.Parallel()
+
 		var buf bytes.Buffer
 		// [][3]any - should fail because only [][2]any is supported
 		sliceType := reflect.TypeOf([][3]any{})
@@ -611,6 +685,8 @@ func TestWriteOrderedMapQuery_ErrorPath(t *testing.T) {
 	})
 
 	t.Run("non-string key produces error", func(t *testing.T) {
+		t.Parallel()
+
 		var buf bytes.Buffer
 		// [][2]any with non-string key
 		sliceType := reflect.TypeOf([][2]any{})
@@ -627,6 +703,8 @@ func TestWriteOrderedMapQuery_ErrorPath(t *testing.T) {
 	})
 
 	t.Run("error from nested writeQuery is wrapped", func(t *testing.T) {
+		t.Parallel()
+
 		var buf bytes.Buffer
 		// [][2]any with map value - should error
 		sliceType := reflect.TypeOf([][2]any{})
@@ -650,7 +728,11 @@ func TestWriteOrderedMapQuery_ErrorPath(t *testing.T) {
 
 // TestWriteInterfaceQuery_ErrorPath tests error handling in writeInterfaceQuery
 func TestWriteInterfaceQuery_ErrorPath(t *testing.T) {
+	t.Parallel()
+
 	t.Run("error from nested writeQuery is wrapped", func(t *testing.T) {
+		t.Parallel()
+
 		var buf bytes.Buffer
 		// Interface containing a map - should error
 		var iface any = map[string]string{"key": "value"}
@@ -671,6 +753,8 @@ func TestWriteInterfaceQuery_ErrorPath(t *testing.T) {
 	})
 
 	t.Run("nil interface is handled", func(t *testing.T) {
+		t.Parallel()
+
 		var buf bytes.Buffer
 		var iface any
 		ifaceType := reflect.TypeOf((*any)(nil)).Elem()
@@ -687,6 +771,8 @@ func TestWriteInterfaceQuery_ErrorPath(t *testing.T) {
 	})
 
 	t.Run("interface containing nil pointer is handled", func(t *testing.T) {
+		t.Parallel()
+
 		var buf bytes.Buffer
 		var ptr *string
 		iface := any(ptr)
@@ -709,7 +795,11 @@ func TestWriteInterfaceQuery_ErrorPath(t *testing.T) {
 
 // TestWriteStructQuery_ErrorPath tests error handling in writeStructQuery
 func TestWriteStructQuery_ErrorPath(t *testing.T) {
+	t.Parallel()
+
 	t.Run("error from nested field writeQuery is wrapped", func(t *testing.T) {
+		t.Parallel()
+
 		var buf bytes.Buffer
 		type TestStruct struct {
 			InvalidField map[string]string
@@ -735,7 +825,11 @@ func TestWriteStructQuery_ErrorPath(t *testing.T) {
 
 // TestWriteQuery_PtrErrorPath tests error handling for pointer types in writeQuery
 func TestWriteQuery_PtrErrorPath(t *testing.T) {
+	t.Parallel()
+
 	t.Run("error from pointer element is wrapped", func(t *testing.T) {
+		t.Parallel()
+
 		var buf bytes.Buffer
 		// Pointer to map - should error
 		mapVal := map[string]string{"key": "value"}
@@ -758,6 +852,8 @@ func TestWriteQuery_PtrErrorPath(t *testing.T) {
 
 // TestConstructOptions_InvalidType tests the error path for invalid option types
 func TestConstructOptions_InvalidType(t *testing.T) {
+	t.Parallel()
+
 	// Create a mock option with an invalid type
 	invalidOption := &mockInvalidOption{}
 
@@ -787,6 +883,8 @@ func (m *mockInvalidOption) String() string {
 
 // TestConstructOperation_OptionError tests error propagation from constructOptions
 func TestConstructOperation_OptionError(t *testing.T) {
+	t.Parallel()
+
 	type TestQuery struct {
 		Field string
 	}
@@ -803,25 +901,35 @@ func TestConstructOperation_OptionError(t *testing.T) {
 
 // TestIsScalarType tests the isScalarType helper function
 func TestIsScalarType(t *testing.T) {
+	t.Parallel()
+
 	t.Run("ID type is scalar", func(t *testing.T) {
+		t.Parallel()
+
 		if !isScalarType(reflect.TypeOf(ID(""))) {
 			t.Error("expected ID type to be scalar")
 		}
 	})
 
 	t.Run("string type is not scalar", func(t *testing.T) {
+		t.Parallel()
+
 		if isScalarType(reflect.TypeOf("")) {
 			t.Error("expected string type to not be scalar")
 		}
 	})
 
 	t.Run("int type is not scalar", func(t *testing.T) {
+		t.Parallel()
+
 		if isScalarType(reflect.TypeOf(0)) {
 			t.Error("expected int type to not be scalar")
 		}
 	})
 
 	t.Run("struct type is not scalar", func(t *testing.T) {
+		t.Parallel()
+
 		type TestStruct struct {
 			Field string
 		}
@@ -831,6 +939,8 @@ func TestIsScalarType(t *testing.T) {
 	})
 
 	t.Run("type implementing json.Unmarshaler is scalar", func(t *testing.T) {
+		t.Parallel()
+
 		// time.Time implements json.Unmarshaler
 		if !isScalarType(reflect.TypeOf(time.Time{})) {
 			t.Error("expected time.Time (json.Unmarshaler) to be scalar")

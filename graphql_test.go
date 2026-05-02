@@ -16,6 +16,8 @@ import (
 )
 
 func TestClient_Query_partialDataWithErrorResponse(t *testing.T) {
+	t.Parallel()
+
 	mux := http.NewServeMux()
 	mux.HandleFunc("/graphql", func(w http.ResponseWriter, req *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
@@ -79,6 +81,8 @@ func TestClient_Query_partialDataWithErrorResponse(t *testing.T) {
 }
 
 func TestClient_Query_partialDataRawQueryWithErrorResponse(t *testing.T) {
+	t.Parallel()
+
 	mux := http.NewServeMux()
 	mux.HandleFunc("/graphql", func(w http.ResponseWriter, req *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
@@ -147,6 +151,8 @@ func TestClient_Query_partialDataRawQueryWithErrorResponse(t *testing.T) {
 }
 
 func TestClient_Query_noDataWithErrorResponse(t *testing.T) {
+	t.Parallel()
+
 	mux := http.NewServeMux()
 	mux.HandleFunc("/graphql", func(w http.ResponseWriter, req *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
@@ -213,6 +219,8 @@ func TestClient_Query_noDataWithErrorResponse(t *testing.T) {
 }
 
 func TestClient_Query_errorStatusCode(t *testing.T) {
+	t.Parallel()
+
 	mux := http.NewServeMux()
 	mux.HandleFunc("/graphql", func(w http.ResponseWriter, req *http.Request) {
 		http.Error(w, "important message", http.StatusInternalServerError)
@@ -272,6 +280,8 @@ func TestClient_Query_errorStatusCode(t *testing.T) {
 // TestClient_Query_networkError tests that network errors during HTTP request
 // execution are properly handled and wrapped.
 func TestClient_Query_networkError(t *testing.T) {
+	t.Parallel()
+
 	// Create a transport that always returns an error
 	errorTransport := &errorTransport{
 		err: errors.New("simulated network error: connection refused"),
@@ -329,6 +339,8 @@ func (t *errorTransport) RoundTrip(req *http.Request) (*http.Response, error) {
 // Test that an empty (but non-nil) variables map is
 // handled no differently than a nil variables map.
 func TestClient_Query_emptyVariables(t *testing.T) {
+	t.Parallel()
+
 	mux := http.NewServeMux()
 	mux.HandleFunc("/graphql", func(w http.ResponseWriter, req *http.Request) {
 		body := mustRead(req.Body)
@@ -360,6 +372,8 @@ func TestClient_Query_emptyVariables(t *testing.T) {
 // Test ignored field
 // handled no differently than a nil variables map.
 func TestClient_Query_ignoreFields(t *testing.T) {
+	t.Parallel()
+
 	mux := http.NewServeMux()
 	mux.HandleFunc("/graphql", func(w http.ResponseWriter, req *http.Request) {
 		body := mustRead(req.Body)
@@ -395,6 +409,8 @@ func TestClient_Query_ignoreFields(t *testing.T) {
 
 // Test raw json response from query
 func TestClient_Query_RawResponse(t *testing.T) {
+	t.Parallel()
+
 	mux := http.NewServeMux()
 	mux.HandleFunc("/graphql", func(w http.ResponseWriter, req *http.Request) {
 		body := mustRead(req.Body)
@@ -432,6 +448,8 @@ func TestClient_Query_RawResponse(t *testing.T) {
 
 // Test exec pre-built query
 func TestClient_Exec_Query(t *testing.T) {
+	t.Parallel()
+
 	mux := http.NewServeMux()
 	mux.HandleFunc("/graphql", func(w http.ResponseWriter, req *http.Request) {
 		body := mustRead(req.Body)
@@ -470,6 +488,8 @@ func TestClient_Exec_Query(t *testing.T) {
 
 // Test exec pre-built query, return raw json string
 func TestClient_Exec_QueryRaw(t *testing.T) {
+	t.Parallel()
+
 	mux := http.NewServeMux()
 	mux.HandleFunc("/graphql", func(w http.ResponseWriter, req *http.Request) {
 		body := mustRead(req.Body)
@@ -646,6 +666,8 @@ func NewNestedQuery[T any](containerLayers ...string) *NestedQuery[T] {
 }
 
 func TestClient_Query_withWrapper(t *testing.T) {
+	t.Parallel()
+
 	mux := http.NewServeMux()
 	mux.HandleFunc("/graphql", func(w http.ResponseWriter, req *http.Request) {
 		body := mustRead(req.Body)
@@ -682,6 +704,8 @@ func TestClient_Query_withWrapper(t *testing.T) {
 // TestClient_Query_multiLevelNesting tests wrapper with multiple nesting levels
 // to validate the GetNodes() traversal logic.
 func TestClient_Query_multiLevelNesting(t *testing.T) {
+	t.Parallel()
+
 	mux := http.NewServeMux()
 	mux.HandleFunc("/graphql", func(w http.ResponseWriter, req *http.Request) {
 		body := mustRead(req.Body)
@@ -723,6 +747,8 @@ func TestClient_Query_multiLevelNesting(t *testing.T) {
 // TestClient_Mutation_withWrapper tests mutations with wrapped types
 // to ensure wrappers work correctly in mutation operations.
 func TestClient_Mutation_withWrapper(t *testing.T) {
+	t.Parallel()
+
 	mux := http.NewServeMux()
 	mux.HandleFunc("/graphql", func(w http.ResponseWriter, req *http.Request) {
 		body := mustRead(req.Body)
@@ -771,6 +797,8 @@ func TestClient_Mutation_withWrapper(t *testing.T) {
 // TestClient_Query_StructVariables tests end-to-end client Query with struct variables
 // This validates the struct-based variable support added in commit e2d1096.
 func TestClient_Query_StructVariables(t *testing.T) {
+	t.Parallel()
+
 	tests := []struct {
 		name          string
 		variables     any
@@ -873,6 +901,8 @@ func TestClient_Query_StructVariables(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+
 			mux := http.NewServeMux()
 			mux.HandleFunc(
 				"/graphql",
@@ -936,6 +966,8 @@ func TestClient_Query_StructVariables(t *testing.T) {
 
 // TestClient_Mutate_StructVariables tests end-to-end client Mutate with struct variables
 func TestClient_Mutate_StructVariables(t *testing.T) {
+	t.Parallel()
+
 	mux := http.NewServeMux()
 	mux.HandleFunc("/graphql", func(w http.ResponseWriter, req *http.Request) {
 		body := mustRead(req.Body)
@@ -996,6 +1028,8 @@ func TestClient_Mutate_StructVariables(t *testing.T) {
 // TestClient_QueryRaw_StructVariables tests QueryRaw with struct variables
 // Validates that struct variables are properly serialized in HTTP request
 func TestClient_QueryRaw_StructVariables(t *testing.T) {
+	t.Parallel()
+
 	mux := http.NewServeMux()
 	mux.HandleFunc("/graphql", func(w http.ResponseWriter, req *http.Request) {
 		body := mustRead(req.Body)
@@ -1058,7 +1092,11 @@ func stringPtr(s string) *string {
 // TestClient_decorateError tests the helper method for decorating errors
 // based on debug mode settings.
 func TestClient_decorateError(t *testing.T) {
+	t.Parallel()
+
 	t.Run("debug mode enabled with request and response", func(t *testing.T) {
+		t.Parallel()
+
 		client := graphql.NewClient("http://example.com", nil).WithDebug(true)
 
 		// Create a mock request and response
@@ -1109,6 +1147,8 @@ func TestClient_decorateError(t *testing.T) {
 	})
 
 	t.Run("debug mode disabled", func(t *testing.T) {
+		t.Parallel()
+
 		client := graphql.NewClient("http://example.com", nil).WithDebug(false)
 
 		reqBody := `{"query":"{test}"}`
@@ -1154,6 +1194,8 @@ func TestClient_decorateError(t *testing.T) {
 	})
 
 	t.Run("debug mode handles body read error gracefully", func(t *testing.T) {
+		t.Parallel()
+
 		// Create a failing reader
 		failingReader := &failingReader{err: errors.New("simulated read error")}
 
@@ -1240,7 +1282,11 @@ func (t *failingBodyTransport) RoundTrip(
 // TestClient_newRequestError tests the convenience method for creating
 // and decorating errors in one step.
 func TestClient_newRequestError(t *testing.T) {
+	t.Parallel()
+
 	t.Run("creates error with code and message", func(t *testing.T) {
+		t.Parallel()
+
 		client := graphql.NewClient("http://example.com", nil)
 
 		err := client.NewRequestError(
@@ -1263,6 +1309,8 @@ func TestClient_newRequestError(t *testing.T) {
 	})
 
 	t.Run("decorates with debug info when enabled", func(t *testing.T) {
+		t.Parallel()
+
 		client := graphql.NewClient("http://example.com", nil).WithDebug(true)
 
 		reqBody := `{"query":"{test}"}`
@@ -1307,7 +1355,11 @@ func TestClient_newRequestError(t *testing.T) {
 // TestClient_buildRequest tests the buildRequest method that constructs
 // the HTTP request with JSON body for GraphQL operations
 func TestClient_buildRequest(t *testing.T) {
+	t.Parallel()
+
 	t.Run("builds request with query and variables", func(t *testing.T) {
+		t.Parallel()
+
 		client := graphql.NewClient("http://example.com/graphql", nil)
 		ctx := context.Background()
 		query := "{user{name}}"
@@ -1351,6 +1403,8 @@ func TestClient_buildRequest(t *testing.T) {
 	})
 
 	t.Run("builds request without variables", func(t *testing.T) {
+		t.Parallel()
+
 		client := graphql.NewClient("http://example.com/graphql", nil)
 		ctx := context.Background()
 		query := "{user{name}}"
@@ -1382,6 +1436,8 @@ func TestClient_buildRequest(t *testing.T) {
 	})
 
 	t.Run("applies request modifier", func(t *testing.T) {
+		t.Parallel()
+
 		modifierCalled := false
 		client := graphql.NewClient("http://example.com/graphql", nil).
 			WithRequestModifier(func(req *http.Request) {
@@ -1407,6 +1463,8 @@ func TestClient_buildRequest(t *testing.T) {
 	})
 
 	t.Run("handles context cancellation", func(t *testing.T) {
+		t.Parallel()
+
 		client := graphql.NewClient("http://example.com/graphql", nil)
 
 		// Create a canceled context
@@ -1430,6 +1488,8 @@ func TestClient_buildRequest(t *testing.T) {
 	t.Run(
 		"handles variables that cannot be marshaled to JSON",
 		func(t *testing.T) {
+			t.Parallel()
+
 			client := graphql.NewClient("http://example.com/graphql", nil)
 			ctx := context.Background()
 			query := "{user{name}}"
@@ -1459,7 +1519,11 @@ func TestClient_buildRequest(t *testing.T) {
 // TestClient_ImmutablePattern tests that With* methods follow the immutable
 // pattern by returning new Client instances without modifying the original.
 func TestClient_ImmutablePattern(t *testing.T) {
+	t.Parallel()
+
 	t.Run("WithDebug returns new instance", func(t *testing.T) {
+		t.Parallel()
+
 		original := graphql.NewClient("http://example.com/graphql", nil)
 
 		// Call WithDebug and verify it returns a different instance
@@ -1478,6 +1542,8 @@ func TestClient_ImmutablePattern(t *testing.T) {
 	})
 
 	t.Run("WithRequestModifier returns new instance", func(t *testing.T) {
+		t.Parallel()
+
 		original := graphql.NewClient("http://example.com/graphql", nil)
 
 		// Original has no modifier
@@ -1520,6 +1586,8 @@ func TestClient_ImmutablePattern(t *testing.T) {
 	})
 
 	t.Run("chaining With methods works correctly", func(t *testing.T) {
+		t.Parallel()
+
 		original := graphql.NewClient("http://example.com/graphql", nil)
 
 		// Chain methods
@@ -1555,6 +1623,8 @@ func TestClient_ImmutablePattern(t *testing.T) {
 	})
 
 	t.Run("chaining order doesn't matter", func(t *testing.T) {
+		t.Parallel()
+
 		original := graphql.NewClient("http://example.com/graphql", nil)
 
 		// Chain in one order
@@ -1596,6 +1666,8 @@ func TestClient_ImmutablePattern(t *testing.T) {
 	})
 
 	t.Run("WithRequestModifier preserves debug field", func(t *testing.T) {
+		t.Parallel()
+
 		// Create a client with debug enabled
 		original := graphql.NewClient("http://example.com/graphql", nil).
 			WithDebug(true)
@@ -1650,6 +1722,8 @@ func TestClient_ImmutablePattern(t *testing.T) {
 	})
 
 	t.Run("WithDebug preserves requestModifier field", func(t *testing.T) {
+		t.Parallel()
+
 		modifierCalled := false
 
 		// Create a client with a request modifier
@@ -1683,6 +1757,8 @@ func TestClient_ImmutablePattern(t *testing.T) {
 	t.Run(
 		"WithRequestModifier then WithDebug preserves both fields",
 		func(t *testing.T) {
+			t.Parallel()
+
 			modifierCalled := false
 
 			// Chain: modifier first, then debug
@@ -1756,7 +1832,11 @@ func TestClient_ImmutablePattern(t *testing.T) {
 // TestClient_executeRequest tests the executeRequest method that executes
 // the HTTP request and handles gzip decompression
 func TestClient_executeRequest(t *testing.T) {
+	t.Parallel()
+
 	t.Run("executes request successfully", func(t *testing.T) {
+		t.Parallel()
+
 		mux := http.NewServeMux()
 		mux.HandleFunc("/graphql", func(w http.ResponseWriter, req *http.Request) {
 			w.Header().Set("Content-Type", "application/json")
@@ -1799,6 +1879,8 @@ func TestClient_executeRequest(t *testing.T) {
 	})
 
 	t.Run("handles non-200 status code", func(t *testing.T) {
+		t.Parallel()
+
 		mux := http.NewServeMux()
 		mux.HandleFunc("/graphql", func(w http.ResponseWriter, req *http.Request) {
 			http.Error(w, "internal server error", http.StatusInternalServerError)
@@ -1829,6 +1911,8 @@ func TestClient_executeRequest(t *testing.T) {
 	})
 
 	t.Run("handles gzip compression", func(t *testing.T) {
+		t.Parallel()
+
 		mux := http.NewServeMux()
 		mux.HandleFunc("/graphql", func(w http.ResponseWriter, req *http.Request) {
 			w.Header().Set("Content-Type", "application/json")
@@ -1878,6 +1962,8 @@ func TestClient_executeRequest(t *testing.T) {
 	})
 
 	t.Run("handles invalid gzip data", func(t *testing.T) {
+		t.Parallel()
+
 		mux := http.NewServeMux()
 		mux.HandleFunc("/graphql", func(w http.ResponseWriter, req *http.Request) {
 			w.Header().Set("Content-Type", "application/json")
@@ -1930,7 +2016,11 @@ func TestClient_executeRequest(t *testing.T) {
 // TestClient_decodeResponse tests the decodeResponse method that decodes
 // GraphQL JSON responses into data and errors
 func TestClient_decodeResponse(t *testing.T) {
+	t.Parallel()
+
 	t.Run("decodes successful response with data", func(t *testing.T) {
+		t.Parallel()
+
 		client := graphql.NewClient("http://example.com/graphql", nil)
 		responseBody := `{"data":{"user":{"name":"Alice","id":"123"}}}`
 		reader := strings.NewReader(responseBody)
@@ -1959,6 +2049,8 @@ func TestClient_decodeResponse(t *testing.T) {
 	})
 
 	t.Run("decodes response with errors", func(t *testing.T) {
+		t.Parallel()
+
 		client := graphql.NewClient("http://example.com/graphql", nil)
 		responseBody := `{"errors":[{"message":"field not found","locations":[{"line":1,"column":2}]}]}`
 		reader := strings.NewReader(responseBody)
@@ -1985,6 +2077,8 @@ func TestClient_decodeResponse(t *testing.T) {
 	})
 
 	t.Run("decodes response with partial data and errors", func(t *testing.T) {
+		t.Parallel()
+
 		client := graphql.NewClient("http://example.com/graphql", nil)
 		responseBody := `{"data":{"user":{"name":"Bob"}},"errors":[{"message":"some field failed"}]}`
 		reader := strings.NewReader(responseBody)
@@ -2022,6 +2116,8 @@ func TestClient_decodeResponse(t *testing.T) {
 	})
 
 	t.Run("handles invalid JSON", func(t *testing.T) {
+		t.Parallel()
+
 		client := graphql.NewClient("http://example.com/graphql", nil)
 		responseBody := `{invalid json}`
 		reader := strings.NewReader(responseBody)
@@ -2044,7 +2140,11 @@ func TestClient_decodeResponse(t *testing.T) {
 
 // TestError_GetCode tests the GetCode helper method.
 func TestError_GetCode(t *testing.T) {
+	t.Parallel()
+
 	t.Run("returns code when present", func(t *testing.T) {
+		t.Parallel()
+
 		err := graphql.Error{
 			Message: "test error",
 			Extensions: map[string]any{
@@ -2059,6 +2159,8 @@ func TestError_GetCode(t *testing.T) {
 	})
 
 	t.Run("returns empty string when extensions is nil", func(t *testing.T) {
+		t.Parallel()
+
 		err := graphql.Error{
 			Message: "test error",
 		}
@@ -2070,6 +2172,8 @@ func TestError_GetCode(t *testing.T) {
 	})
 
 	t.Run("returns empty string when code not present", func(t *testing.T) {
+		t.Parallel()
+
 		err := graphql.Error{
 			Message: "test error",
 			Extensions: map[string]any{
@@ -2084,6 +2188,8 @@ func TestError_GetCode(t *testing.T) {
 	})
 
 	t.Run("returns empty string when code is wrong type", func(t *testing.T) {
+		t.Parallel()
+
 		err := graphql.Error{
 			Message: "test error",
 			Extensions: map[string]any{
@@ -2101,7 +2207,11 @@ func TestError_GetCode(t *testing.T) {
 // TestError_GetInternalExtensions tests the GetInternalExtensions
 // helper method.
 func TestError_GetInternalExtensions(t *testing.T) {
+	t.Parallel()
+
 	t.Run("returns nil when extensions is nil", func(t *testing.T) {
+		t.Parallel()
+
 		err := graphql.Error{
 			Message: "test error",
 		}
@@ -2113,6 +2223,8 @@ func TestError_GetInternalExtensions(t *testing.T) {
 	})
 
 	t.Run("returns nil when internal not present", func(t *testing.T) {
+		t.Parallel()
+
 		err := graphql.Error{
 			Message: "test error",
 			Extensions: map[string]any{
@@ -2127,6 +2239,8 @@ func TestError_GetInternalExtensions(t *testing.T) {
 	})
 
 	t.Run("returns typed request info", func(t *testing.T) {
+		t.Parallel()
+
 		headers := http.Header{
 			"Content-Type": []string{"application/json"},
 		}
@@ -2167,6 +2281,8 @@ func TestError_GetInternalExtensions(t *testing.T) {
 	})
 
 	t.Run("returns typed response info", func(t *testing.T) {
+		t.Parallel()
+
 		headers := http.Header{
 			"Content-Type": []string{"application/json"},
 		}
@@ -2207,6 +2323,8 @@ func TestError_GetInternalExtensions(t *testing.T) {
 	})
 
 	t.Run("returns typed error info", func(t *testing.T) {
+		t.Parallel()
+
 		testErr := fmt.Errorf("test error detail")
 
 		err := graphql.Error{
@@ -2237,6 +2355,8 @@ func TestError_GetInternalExtensions(t *testing.T) {
 	})
 
 	t.Run("returns all info when present", func(t *testing.T) {
+		t.Parallel()
+
 		reqHeaders := http.Header{
 			"Content-Type": []string{"application/json"},
 		}
@@ -2301,6 +2421,8 @@ func TestError_GetInternalExtensions(t *testing.T) {
 	})
 
 	t.Run("handles missing fields gracefully", func(t *testing.T) {
+		t.Parallel()
+
 		err := graphql.Error{
 			Message: "test error",
 			Extensions: map[string]any{
@@ -2331,6 +2453,8 @@ func TestError_GetInternalExtensions(t *testing.T) {
 	})
 
 	t.Run("integration with DecorateError", func(t *testing.T) {
+		t.Parallel()
+
 		// Test that errors decorated via DecorateError can be retrieved
 		// via GetInternalExtensions
 		client := graphql.NewClient("http://example.com", nil).WithDebug(true)
@@ -2410,6 +2534,8 @@ func TestError_GetInternalExtensions(t *testing.T) {
 // TestClient_MutateRaw tests MutateRaw with struct variables
 // Validates that MutateRaw returns raw bytes and properly serializes struct variables
 func TestClient_MutateRaw(t *testing.T) {
+	t.Parallel()
+
 	mux := http.NewServeMux()
 	mux.HandleFunc("/graphql", func(w http.ResponseWriter, req *http.Request) {
 		body := mustRead(req.Body)
@@ -2484,6 +2610,8 @@ func TestClient_MutateRaw(t *testing.T) {
 
 // TestClient_UnmarshalGraphQL tests the UnmarshalGraphQL wrapper function
 func TestClient_UnmarshalGraphQL(t *testing.T) {
+	t.Parallel()
+
 	data := []byte(`{"hero":{"name":"Luke Skywalker"}}`)
 
 	var result struct {
@@ -2504,7 +2632,11 @@ func TestClient_UnmarshalGraphQL(t *testing.T) {
 
 // TestClient_ExecuteRequest tests the ExecuteRequest method
 func TestClient_ExecuteRequest(t *testing.T) {
+	t.Parallel()
+
 	t.Run("successful request", func(t *testing.T) {
+		t.Parallel()
+
 		mux := http.NewServeMux()
 		mux.HandleFunc("/graphql", func(w http.ResponseWriter, req *http.Request) {
 			w.Header().Set("Content-Type", "application/json")
@@ -2541,6 +2673,8 @@ func TestClient_ExecuteRequest(t *testing.T) {
 	})
 
 	t.Run("gzip compressed response", func(t *testing.T) {
+		t.Parallel()
+
 		mux := http.NewServeMux()
 		mux.HandleFunc("/graphql", func(w http.ResponseWriter, req *http.Request) {
 			w.Header().Set("Content-Type", "application/json")
@@ -2578,6 +2712,8 @@ func TestClient_ExecuteRequest(t *testing.T) {
 	})
 
 	t.Run("non-200 status code", func(t *testing.T) {
+		t.Parallel()
+
 		mux := http.NewServeMux()
 		mux.HandleFunc("/graphql", func(w http.ResponseWriter, req *http.Request) {
 			w.WriteHeader(http.StatusInternalServerError)
