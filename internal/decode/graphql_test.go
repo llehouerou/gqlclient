@@ -1455,7 +1455,8 @@ func TestUnmarshalGraphQL_mapTemplateError(t *testing.T) {
 func TestUnmarshalGraphQL_fragmentTypeEdgeCase(t *testing.T) {
 	t.Parallel()
 
-	// Tests fragmentType() accessing index beyond fragmentTypes slice length
+	// Decodes a nested union (... on Droid / ... on Human) selected by
+	// __typename, exercising fragment-type matching across multiple entries.
 	type query struct {
 		User struct {
 			Login string

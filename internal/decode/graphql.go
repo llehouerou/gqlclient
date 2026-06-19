@@ -101,8 +101,7 @@ func (d *decoder) Decode(v any) error {
 		return fmt.Errorf("cannot decode into non-pointer %T", v)
 	}
 	d.vs = valueStack{
-		values:        []stack{{rv.Elem()}},
-		fragmentTypes: []string{""}, // Root is not a fragment
+		entries: []entry{{stack: stack{rv.Elem()}}}, // root, not a fragment
 	}
 	return d.decodeLoop()
 }
