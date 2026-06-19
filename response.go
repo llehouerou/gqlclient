@@ -69,18 +69,15 @@ func (c *Client) processResponse(
 	v any,
 	data []byte,
 	resp *http.Response,
-	respBuf io.Reader,
+	respBody []byte,
 	errs Errors,
 ) error {
 	if len(data) > 0 {
 		err := decode.UnmarshalGraphQL(data, v)
 		if err != nil {
-			we := c.DecorateError(
+			we := c.decorate(
 				newGraphQLDecodeError(err),
-				nil,
-				resp,
-				nil,
-				respBuf,
+				errorContext{resp: resp, respBody: respBody},
 			)
 			errs = append(errs, we)
 		}

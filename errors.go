@@ -3,7 +3,6 @@ package graphql
 import (
 	"errors"
 	"fmt"
-	"io"
 	"net/http"
 	"strings"
 )
@@ -264,23 +263,28 @@ func newGraphQLDecodeError(err error) Error {
 	return newError(ErrCodeGraphQLDecode, err)
 }
 
-// withDebugInfo adds debug information to the error's internal extensions.
-// It reads the body from bodyReader and stores it along with headers under the
-// specified infoType key ("request" or "response").
+// errorContext carries the HTTP request/response material that debug-mode
+// decoration attaches to an error. Any field may be zero; reqBody/respBody are
+// the already-buffered bodies (respBody is only populated in debug mode).
+type errorContext struct {
+	req      *http.Request
+	reqBody  []byte
+	resp     *http.Response
+	respBody []byte
+}
+
+// withDebugInfo adds debug information to the error's internal extensions,
+// storing body alongside headers under the infoType key ("request" or
+// "response").
 func (e Error) withDebugInfo(
 	infoType string,
 	headers http.Header,
-	bodyReader io.Reader,
+	body []byte,
 ) Error {
 	internal := e.getInternalExtension()
-	bodyBytes, err := io.ReadAll(bodyReader)
-	if err != nil {
-		internal["error"] = err
-	} else {
-		internal[infoType] = map[string]any{
-			"headers": headers,
-			"body":    string(bodyBytes),
-		}
+	internal[infoType] = map[string]any{
+		"headers": headers,
+		"body":    string(body),
 	}
 
 	if e.Extensions == nil {
@@ -291,51 +295,40 @@ func (e Error) withDebugInfo(
 }
 
 // withRequest adds HTTP request information to the error's debug extensions.
-func (e Error) withRequest(req *http.Request, bodyReader io.Reader) Error {
-	return e.withDebugInfo("request", req.Header, bodyReader)
+func (e Error) withRequest(req *http.Request, body []byte) Error {
+	return e.withDebugInfo("request", req.Header, body)
 }
 
 // withResponse adds HTTP response information to the error's debug extensions.
-func (e Error) withResponse(res *http.Response, bodyReader io.Reader) Error {
-	return e.withDebugInfo("response", res.Header, bodyReader)
+func (e Error) withResponse(res *http.Response, body []byte) Error {
+	return e.withDebugInfo("response", res.Header, body)
 }
 
-// DecorateError decorates an error with request/response information if debug
-// mode is enabled. This helper method centralizes the error decoration logic
-// and eliminates repetitive debug checks throughout the codebase.
-func (c *Client) DecorateError(
-	err Error,
-	req *http.Request,
-	resp *http.Response,
-	reqBody,
-	respBody io.Reader,
-) Error {
+// decorate is the single owner of the debug-decoration policy: when debug mode
+// is enabled it attaches whatever request/response context ctx carries. A
+// no-op when debug is off, so callers never gate on c.debug themselves.
+func (c *Client) decorate(e Error, ctx errorContext) Error {
 	if !c.debug {
-		return err
+		return e
 	}
 
-	if req != nil && reqBody != nil {
-		err = err.withRequest(req, reqBody)
+	if ctx.req != nil && ctx.reqBody != nil {
+		e = e.withRequest(ctx.req, ctx.reqBody)
 	}
 
-	if resp != nil && respBody != nil {
-		err = err.withResponse(resp, respBody)
+	if ctx.resp != nil && ctx.respBody != nil {
+		e = e.withResponse(ctx.resp, ctx.respBody)
 	}
 
-	return err
+	return e
 }
 
-// NewRequestError creates a new error with the given code and decorates it with
-// request/response information if debug mode is enabled. This is a convenience
-// method that combines error creation and decoration in one step.
-func (c *Client) NewRequestError(
+// newRequestError creates a new error with the given code and decorates it
+// with ctx when debug mode is enabled, in one step.
+func (c *Client) newRequestError(
 	code string,
 	err error,
-	req *http.Request,
-	resp *http.Response,
-	reqBody,
-	respBody io.Reader,
+	ctx errorContext,
 ) Error {
-	e := newError(code, err)
-	return c.DecorateError(e, req, resp, reqBody, respBody)
+	return c.decorate(newError(code, err), ctx)
 }

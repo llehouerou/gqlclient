@@ -105,17 +105,14 @@ func (c *Client) request(
 	ctx context.Context,
 	query string,
 	variables any,
-) ([]byte, *http.Response, io.Reader, Errors) {
+) ([]byte, *http.Response, []byte, Errors) {
 	// Build HTTP request with JSON body
 	request, reqBody, err := c.BuildRequest(ctx, query, variables)
 	if err != nil {
-		e := c.NewRequestError(
+		e := c.newRequestError(
 			ErrCodeJSONEncode,
 			fmt.Errorf("problem constructing request: %w", err),
-			request,
-			nil,
-			bytes.NewReader(reqBody),
-			nil,
+			errorContext{req: request, reqBody: reqBody},
 		)
 		return nil, nil, nil, Errors{e}
 	}
@@ -123,68 +120,56 @@ func (c *Client) request(
 	// Execute the HTTP round trip through the single transport seam.
 	resp, body, err := c.executeRequest(request)
 	if err != nil {
-		e := c.NewRequestError(
+		e := c.newRequestError(
 			ErrCodeRequest,
 			err,
-			request,
-			nil,
-			bytes.NewReader(reqBody),
-			nil,
+			errorContext{req: request, reqBody: reqBody},
 		)
 		return nil, nil, nil, Errors{e}
 	}
 	defer func() { _ = resp.Body.Close() }() //nolint:errcheck // deferred close; nothing to do with the close error
 	defer func() { _ = body.Close() }()      //nolint:errcheck // deferred close; nothing to do with the close error
 
-	// Copy response body for debugging if needed
+	// Buffer the response body for debug decoration if needed.
 	var respBody []byte
-	var respReader *bytes.Reader
 	var decodeFrom io.Reader = body
 	if c.debug {
-		respBody, respReader, err = copyResponseForDebug(body)
+		var r *bytes.Reader
+		respBody, r, err = copyResponseForDebug(body)
 		if err != nil {
 			return nil, nil, nil, Errors{newJSONDecodeError(err)}
 		}
-		decodeFrom = respReader
+		decodeFrom = r
 	}
 
 	// Decode GraphQL response
 	rawData, gqlErrors := c.DecodeResponse(decodeFrom)
 
-	if c.debug && respReader != nil {
-		_, _ = respReader.Seek(0, io.SeekStart) //nolint:errcheck // *bytes.Reader.Seek(0, io.SeekStart) cannot fail
-	}
-
 	// Handle JSON decode errors
 	if len(gqlErrors) > 0 {
+		ctx := errorContext{
+			req:      request,
+			reqBody:  reqBody,
+			resp:     resp,
+			respBody: respBody,
+		}
+
 		// Check if it's a decode error (has ErrCodeJSONDecode code)
 		if code, ok := gqlErrors[0].Extensions["code"].(string); ok &&
 			code == ErrCodeJSONDecode {
-			we := c.NewRequestError(
+			we := c.newRequestError(
 				ErrCodeJSONDecode,
 				fmt.Errorf("%s", gqlErrors[0].Message),
-				request,
-				resp,
-				bytes.NewReader(reqBody),
-				bytes.NewReader(respBody),
+				ctx,
 			)
 			return nil, nil, nil, Errors{we}
 		}
 
-		// Handle GraphQL errors - decorate first error if debug mode
-		if c.debug &&
-			(gqlErrors[0].Extensions == nil || gqlErrors[0].Extensions["request"] == nil) {
-			gqlErrors[0] = c.DecorateError(
-				gqlErrors[0],
-				request,
-				resp,
-				bytes.NewReader(reqBody),
-				bytes.NewReader(respBody),
-			)
-		}
+		// Decorate the first GraphQL error with request/response context.
+		gqlErrors[0] = c.decorate(gqlErrors[0], ctx)
 
-		return rawData, resp, respReader, gqlErrors
+		return rawData, resp, respBody, gqlErrors
 	}
 
-	return rawData, resp, respReader, nil
+	return rawData, resp, respBody, nil
 }

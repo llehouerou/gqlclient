@@ -4,10 +4,10 @@ All notable changes to this project are documented in this file.
 
 ## Unreleased
 
-Internal cleanup of the HTTP transport path: two divergent
-request-execution code paths are collapsed into one, fixing two latent
-bugs along the way. See `docs/adr/0001-public-api-surface.md` for the
-API-shape rationale.
+Internal cleanup of the request/response path: two divergent HTTP
+execution paths are collapsed into one (fixing two latent bugs), and
+error decoration is consolidated behind the error module. See
+`docs/adr/0001-public-api-surface.md` for the API-shape rationale.
 
 ### Breaking changes
 
@@ -24,6 +24,13 @@ API-shape rationale.
   failure, not a JSON-decode failure. Update any
   `errors.Is(err, ErrJSONDecode)` check that targeted gzip failures to
   `errors.Is(err, ErrRequest)`.
+
+- Removed the exported `Client.NewRequestError` and `Client.DecorateError`
+  methods. Error decoration is now internal: the request/response context
+  is passed as one bundle and the debug-decoration policy lives in a
+  single place. Per ADR-0001, error *construction* is machinery — consume
+  errors via `errors.Is`, `Error.GetCode`, and `Error.GetInternalExtensions`,
+  which stay public.
 
 ### Fixes
 

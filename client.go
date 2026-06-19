@@ -2,7 +2,6 @@ package graphql
 
 import (
 	"context"
-	"io"
 	"net/http"
 
 	"github.com/llehouerou/gqlclient/internal/decode"
@@ -122,8 +121,8 @@ func (c *Client) ExecuteQuery(
 	variables map[string]any,
 	options ...Option,
 ) error {
-	data, resp, respBuf, errs := c.request(ctx, query, variables) //nolint:bodyclose // closed inside c.request
-	return c.processResponse(v, data, resp, respBuf, errs)
+	data, resp, respBody, errs := c.request(ctx, query, variables) //nolint:bodyclose // closed inside c.request
+	return c.processResponse(v, data, resp, respBody, errs)
 }
 
 // ExecuteQueryRaw executes a pre-built GraphQL query string and returns the
@@ -298,13 +297,13 @@ func (c *Client) executeAndUnmarshal(
 	options ...Option,
 ) error {
 	//nolint:bodyclose // closed inside c.request, called by c.constructQueryAndExecute
-	data, resp, respBuf, errs := c.constructQueryAndExecute(
+	data, resp, respBody, errs := c.constructQueryAndExecute(
 		ctx,
 		op,
 		v,
 		variables,
 		options...)
-	return c.processResponse(v, data, resp, respBuf, errs)
+	return c.processResponse(v, data, resp, respBody, errs)
 }
 
 // executeForRawJSON executes a single GraphQL operation and returns the raw
@@ -337,7 +336,7 @@ func (c *Client) constructQueryAndExecute(
 	v any,
 	variables any,
 	options ...Option,
-) ([]byte, *http.Response, io.Reader, Errors) {
+) ([]byte, *http.Response, []byte, Errors) {
 	var query string
 	var err error
 	switch op {
