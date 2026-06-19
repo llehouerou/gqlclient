@@ -7,48 +7,56 @@ import (
 	"github.com/llehouerou/gqlclient/internal/fragments"
 )
 
-func TestIsStructField(t *testing.T) {
+func TestFromField(t *testing.T) {
 	t.Parallel()
 
 	tests := []struct {
-		name string
-		tag  string
-		want bool
+		name         string
+		tag          string
+		wantTypename string
+		wantOK       bool
 	}{
 		{
-			name: "valid fragment with typename",
-			tag:  `graphql:"... on Droid"`,
-			want: true,
+			name:         "valid fragment with typename",
+			tag:          `graphql:"... on Droid"`,
+			wantTypename: "Droid",
+			wantOK:       true,
 		},
 		{
-			name: "valid fragment without typename",
-			tag:  `graphql:"..."`,
-			want: true,
+			name:         "valid fragment without typename",
+			tag:          `graphql:"..."`,
+			wantTypename: "",
+			wantOK:       true,
 		},
 		{
-			name: "regular field",
-			tag:  `graphql:"name"`,
-			want: false,
+			name:         "regular field",
+			tag:          `graphql:"name"`,
+			wantTypename: "",
+			wantOK:       false,
 		},
 		{
-			name: "field with arguments",
-			tag:  `graphql:"height(unit: METER)"`,
-			want: false,
+			name:         "field with arguments",
+			tag:          `graphql:"height(unit: METER)"`,
+			wantTypename: "",
+			wantOK:       false,
 		},
 		{
-			name: "field with alias",
-			tag:  `graphql:"node1: node(id: $id)"`,
-			want: false,
+			name:         "field with alias",
+			tag:          `graphql:"node1: node(id: $id)"`,
+			wantTypename: "",
+			wantOK:       false,
 		},
 		{
-			name: "no graphql tag",
-			tag:  `json:"name"`,
-			want: false,
+			name:         "no graphql tag",
+			tag:          `json:"name"`,
+			wantTypename: "",
+			wantOK:       false,
 		},
 		{
-			name: "empty tag",
-			tag:  ``,
-			want: false,
+			name:         "empty tag",
+			tag:          ``,
+			wantTypename: "",
+			wantOK:       false,
 		},
 	}
 
@@ -56,148 +64,105 @@ func TestIsStructField(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 
-			// Create a struct field with the given tag
 			field := reflect.StructField{
 				Name: "TestField",
 				Type: reflect.TypeOf(""),
 				Tag:  reflect.StructTag(tt.tag),
 			}
-			got := fragments.IsStructField(field)
-			if got != tt.want {
-				t.Errorf("IsStructField() = %v, want %v", got, tt.want)
+			typename, ok := fragments.FromField(field)
+			if ok != tt.wantOK {
+				t.Errorf("FromField() ok = %v, want %v", ok, tt.wantOK)
 			}
-		})
-	}
-}
-
-func TestIsTag(t *testing.T) {
-	t.Parallel()
-
-	tests := []struct {
-		name     string
-		tagValue string
-		want     bool
-	}{
-		{
-			name:     "fragment with typename",
-			tagValue: "... on Droid",
-			want:     true,
-		},
-		{
-			name:     "fragment without typename",
-			tagValue: "...",
-			want:     true,
-		},
-		{
-			name:     "fragment with extra spaces",
-			tagValue: "...  on  Droid",
-			want:     true,
-		},
-		{
-			name:     "regular field name",
-			tagValue: "name",
-			want:     false,
-		},
-		{
-			name:     "field with arguments",
-			tagValue: "height(unit: METER)",
-			want:     false,
-		},
-		{
-			name:     "field with alias",
-			tagValue: "node1: node(id: $id)",
-			want:     false,
-		},
-		{
-			name:     "empty string",
-			tagValue: "",
-			want:     false,
-		},
-		{
-			name:     "skip field marker",
-			tagValue: "-",
-			want:     false,
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			t.Parallel()
-
-			got := fragments.IsTag(tt.tagValue)
-			if got != tt.want {
-				t.Errorf("IsTag(%q) = %v, want %v", tt.tagValue, got, tt.want)
-			}
-		})
-	}
-}
-
-func TestExtractTypename(t *testing.T) {
-	t.Parallel()
-
-	tests := []struct {
-		name     string
-		tagValue string
-		want     string
-	}{
-		{
-			name:     "fragment with typename",
-			tagValue: "... on Droid",
-			want:     "Droid",
-		},
-		{
-			name:     "fragment with long typename",
-			tagValue: "... on SolanaTokenTransferAuthorizationRequest",
-			want:     "SolanaTokenTransferAuthorizationRequest",
-		},
-		{
-			name:     "fragment without typename",
-			tagValue: "...",
-			want:     "",
-		},
-		{
-			name:     "fragment with extra spaces",
-			tagValue: "...  on  Droid",
-			want:     "Droid",
-		},
-		{
-			name:     "regular field name",
-			tagValue: "name",
-			want:     "",
-		},
-		{
-			name:     "field with arguments",
-			tagValue: "height(unit: METER)",
-			want:     "",
-		},
-		{
-			name:     "field with alias",
-			tagValue: "node1: node(id: $id)",
-			want:     "",
-		},
-		{
-			name:     "empty string",
-			tagValue: "",
-			want:     "",
-		},
-		{
-			name:     "skip field marker",
-			tagValue: "-",
-			want:     "",
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			t.Parallel()
-
-			got := fragments.ExtractTypename(tt.tagValue)
-			if got != tt.want {
+			if typename != tt.wantTypename {
 				t.Errorf(
-					"ExtractTypename(%q) = %q, want %q",
+					"FromField() typename = %q, want %q",
+					typename,
+					tt.wantTypename,
+				)
+			}
+		})
+	}
+}
+
+func TestFromTag(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name         string
+		tagValue     string
+		wantTypename string
+		wantOK       bool
+	}{
+		{
+			name:         "fragment with typename",
+			tagValue:     "... on Droid",
+			wantTypename: "Droid",
+			wantOK:       true,
+		},
+		{
+			name:         "fragment with long typename",
+			tagValue:     "... on SolanaTokenTransferAuthorizationRequest",
+			wantTypename: "SolanaTokenTransferAuthorizationRequest",
+			wantOK:       true,
+		},
+		{
+			name:         "fragment without typename",
+			tagValue:     "...",
+			wantTypename: "",
+			wantOK:       true,
+		},
+		{
+			name:         "fragment with extra spaces",
+			tagValue:     "...  on  Droid",
+			wantTypename: "Droid",
+			wantOK:       true,
+		},
+		{
+			name:         "regular field name",
+			tagValue:     "name",
+			wantTypename: "",
+			wantOK:       false,
+		},
+		{
+			name:         "field with arguments",
+			tagValue:     "height(unit: METER)",
+			wantTypename: "",
+			wantOK:       false,
+		},
+		{
+			name:         "field with alias",
+			tagValue:     "node1: node(id: $id)",
+			wantTypename: "",
+			wantOK:       false,
+		},
+		{
+			name:         "empty string",
+			tagValue:     "",
+			wantTypename: "",
+			wantOK:       false,
+		},
+		{
+			name:         "skip field marker",
+			tagValue:     "-",
+			wantTypename: "",
+			wantOK:       false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
+			typename, ok := fragments.FromTag(tt.tagValue)
+			if ok != tt.wantOK {
+				t.Errorf("FromTag(%q) ok = %v, want %v", tt.tagValue, ok, tt.wantOK)
+			}
+			if typename != tt.wantTypename {
+				t.Errorf(
+					"FromTag(%q) typename = %q, want %q",
 					tt.tagValue,
-					got,
-					tt.want,
+					typename,
+					tt.wantTypename,
 				)
 			}
 		})

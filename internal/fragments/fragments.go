@@ -1,14 +1,3 @@
-// Package fragments provides utilities for detecting and working with
-// GraphQL inline fragments in struct tags and ordered map keys.
-//
-// GraphQL inline fragments use the "... on TypeName" syntax to handle
-// unions and interfaces. This package centralizes the logic for:
-//   - Detecting whether a tag represents a fragment
-//   - Extracting typename from fragment tags
-//   - Supporting both struct field tags and ordered map keys
-//
-// All fragment detection is based on the tagparser package, which handles
-// the low-level tag parsing.
 package fragments
 
 import (
@@ -18,53 +7,42 @@ import (
 	"github.com/llehouerou/gqlclient/types"
 )
 
-// IsStructField reports whether struct field f is a GraphQL inline fragment.
-// It checks the graphql:"..." tag for the "... on TypeName" pattern.
+// FromField reports whether struct field f carries a GraphQL inline-fragment
+// tag (graphql:"... on TypeName") and, if so, its typename. It performs a
+// single tag lookup and a single parse.
+//
+// ok is true exactly when f is a fragment. typename may be "" even when ok is
+// true — that is a typename-less "..." fragment.
 //
 // Example:
 //
 //	type Response struct {
-//	    Droid `graphql:"... on Droid"`  // IsStructField returns true
+//	    Droid `graphql:"... on Droid"`  // FromField -> ("Droid", true)
 //	}
-func IsStructField(f reflect.StructField) bool {
-	value, ok := f.Tag.Lookup(types.GraphQLTag)
-	if !ok {
-		return false
+func FromField(f reflect.StructField) (typename string, ok bool) {
+	value, found := f.Tag.Lookup(types.GraphQLTag)
+	if !found {
+		return "", false
 	}
-	return IsTag(value)
+	return FromTag(value)
 }
 
-// IsTag reports whether a tag value represents a GraphQL inline fragment.
-// This works for both struct field tags and ordered map keys.
+// FromTag reports whether a tag value is a GraphQL inline fragment and, if so,
+// its typename. It works for both struct-field tags and ordered-map keys, with
+// a single parse.
+//
+// ok is true exactly when tagValue is a fragment. typename may be "" even when
+// ok is true — that is a typename-less "..." fragment.
 //
 // Example:
 //
-//	IsTag("... on Droid")  // true
-//	IsTag("name")          // false
-func IsTag(tagValue string) bool {
+//	FromTag("... on Droid")  // ("Droid", true)
+//	FromTag("...")           // ("", true)
+//	FromTag("name")          // ("", false)
+func FromTag(tagValue string) (typename string, ok bool) {
 	parsed, err := tagparser.ParseGraphQLTag(tagValue)
-	if err != nil {
-		return false
+	if err != nil || !parsed.IsFragment {
+		return "", false
 	}
-	return parsed.IsFragment
-}
-
-// ExtractTypename extracts the typename from a GraphQL fragment tag.
-// For example, "... on Droid" returns "Droid".
-// Returns empty string if not a valid fragment tag or if there's no typename.
-//
-// Example:
-//
-//	ExtractTypename("... on Droid")  // "Droid"
-//	ExtractTypename("...")           // ""
-//	ExtractTypename("name")          // ""
-func ExtractTypename(tagValue string) string {
-	parsed, err := tagparser.ParseGraphQLTag(tagValue)
-	if err != nil {
-		return ""
-	}
-	if !parsed.IsFragment {
-		return ""
-	}
-	return parsed.TypeName
+	return parsed.TypeName, true
 }

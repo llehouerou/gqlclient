@@ -9,7 +9,6 @@ import (
 
 	"github.com/llehouerou/gqlclient/internal/fragments"
 	"github.com/llehouerou/gqlclient/internal/reflectutil"
-	"github.com/llehouerou/gqlclient/types"
 )
 
 // fieldInfo holds information about a field discovered during JSON object unmarshaling.
@@ -202,10 +201,9 @@ func (d *decoder) decodeObjectStart() {
 		if v.Kind() == reflect.Struct {
 			for i := range v.NumField() {
 				field := v.Type().Field(i)
-				if fragments.IsStructField(field) {
+				if typename, ok := fragments.FromField(field); ok {
 					// Add GraphQL fragment and track its typename
-					tag, _ := field.Tag.Lookup(types.GraphQLTag)
-					d.vs.addStack(v.Field(i), fragments.ExtractTypename(tag))
+					d.vs.addStack(v.Field(i), typename)
 					frontier = append(frontier, v.Field(i)) //nolint:makezero // BFS queue extension; see frontier init above
 				} else if field.Anonymous {
 					// Add embedded struct (not a fragment)
@@ -221,9 +219,9 @@ func (d *decoder) decodeObjectStart() {
 				if !ok {
 					continue
 				}
-				if fragments.IsTag(keyStr) {
+				if typename, ok := fragments.FromTag(keyStr); ok {
 					// Add GraphQL fragment and track its typename
-					d.vs.addStack(val, fragments.ExtractTypename(keyStr))
+					d.vs.addStack(val, typename)
 					frontier = append(frontier, val) //nolint:makezero // BFS queue extension; see frontier init above
 				}
 			}

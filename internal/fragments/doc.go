@@ -27,10 +27,10 @@
 //	}
 //
 // The decoder uses this package to:
-//  1. Detect which fields are fragments (IsStructField, IsTag)
-//  2. Extract the typename (ExtractTypename)
-//  3. Match against the __typename in the response
-//  4. Populate only the matching fragment field
+//  1. Detect which fields are fragments and read their typename in one call
+//     (FromField, FromTag)
+//  2. Match that typename against the __typename in the response
+//  3. Populate only the matching fragment field
 //
 // # Ordered Map Support
 //
@@ -44,10 +44,10 @@
 // # Architecture
 //
 // This package acts as a focused facade over the tagparser package.
-// It provides three clean public functions:
-//   - IsStructField(f reflect.StructField) bool
-//   - IsTag(tagValue string) bool
-//   - ExtractTypename(tagValue string) string
+// It provides two functions, each doing a single parse and returning the
+// typename alongside the match:
+//   - FromField(f reflect.StructField) (typename string, ok bool)
+//   - FromTag(tagValue string) (typename string, ok bool)
 //
 // All fragment detection is based on the tagparser package, which handles
 // the low-level tag parsing. This package adds GraphQL-specific semantics
