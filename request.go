@@ -61,40 +61,46 @@ func (c *Client) BuildRequest(
 	return request, reqBody, nil
 }
 
-// ExecuteRequest executes an HTTP request and handles gzip decompression.
-// It returns the HTTP response and a reader for the (possibly decompressed) body.
-func (c *Client) ExecuteRequest(
+// executeRequest performs the HTTP round trip for req: it sends the request,
+// transparently decompresses a gzip-encoded body, and rejects any non-200
+// response. On success it returns the response and a reader over the
+// (decompressed) body; the caller owns closing BOTH resp.Body and the reader.
+//
+// Decompression happens before the status check so that a gzip-encoded error
+// body is readable rather than raw magic bytes. Every failure here — transport,
+// non-200 status, or a corrupt gzip stream — is returned as a plain error
+// describing the cause; classifying it into the library's error model is the
+// orchestrator's job (see request). This is the single internal transport seam;
+// see docs/adr/0001-public-api-surface.md for why it is not exported.
+func (c *Client) executeRequest(
 	req *http.Request,
-) (*http.Response, io.Reader, error) {
+) (*http.Response, io.ReadCloser, error) {
 	resp, err := c.httpClient.Do(req)
 	if err != nil {
 		return nil, nil, err
 	}
 
-	r := resp.Body
-
-	// Handle gzip decompression
-	if resp.Header.Get("Content-Encoding") == "gzip" {
-		gr, err := handleGzipResponse(resp, r)
-		if err != nil {
-			_ = resp.Body.Close() //nolint:errcheck // close on error path; nothing to do with the close error
-			return nil, nil, err
-		}
-		// Note: caller is responsible for closing both gr and resp.Body
-		r = gr
+	body, err := handleGzipResponse(resp, resp.Body)
+	if err != nil {
+		_ = resp.Body.Close() //nolint:errcheck // close on error path; nothing to do with the close error
+		return nil, nil, err
 	}
 
-	// Check status code
 	if resp.StatusCode != http.StatusOK {
-		body, _ := io.ReadAll(r) //nolint:errcheck // partial body is best-effort context for the status error
+		b, _ := io.ReadAll(body) //nolint:errcheck // partial body is best-effort context for the status error
+		_ = body.Close()         //nolint:errcheck // close on error path; nothing to do with the close error
 		_ = resp.Body.Close()    //nolint:errcheck // close on error path; nothing to do with the close error
-		return nil, nil, fmt.Errorf("%v; body: %q", resp.Status, body)
+		return nil, nil, fmt.Errorf("%v; body: %q", resp.Status, b)
 	}
 
-	return resp, r, nil
+	return resp, body, nil
 }
 
-// request is the common method that sends a graphql request
+// request is the common method that sends a graphql request. It is the
+// orchestrator: build the request, hand the round trip to executeRequest, then
+// decode the response. Transport failures (anything executeRequest reports) are
+// classified under ErrCodeRequest; GraphQL and decode errors flow out of
+// DecodeResponse.
 func (c *Client) request(
 	ctx context.Context,
 	query string,
@@ -114,8 +120,8 @@ func (c *Client) request(
 		return nil, nil, nil, Errors{e}
 	}
 
-	// Execute HTTP request
-	resp, err := c.httpClient.Do(request)
+	// Execute the HTTP round trip through the single transport seam.
+	resp, body, err := c.executeRequest(request)
 	if err != nil {
 		e := c.NewRequestError(
 			ErrCodeRequest,
@@ -128,41 +134,22 @@ func (c *Client) request(
 		return nil, nil, nil, Errors{e}
 	}
 	defer func() { _ = resp.Body.Close() }() //nolint:errcheck // deferred close; nothing to do with the close error
-
-	// Check status code
-	if resp.StatusCode != http.StatusOK {
-		body, _ := io.ReadAll(resp.Body) //nolint:errcheck // partial body is best-effort context for the status error
-		err := c.NewRequestError(
-			ErrCodeRequest,
-			fmt.Errorf("%v; body: %q", resp.Status, body),
-			request,
-			nil,
-			bytes.NewReader(reqBody),
-			nil,
-		)
-		return nil, nil, nil, Errors{err}
-	}
-
-	// Handle gzip decompression
-	r, err := handleGzipResponse(resp, resp.Body)
-	if err != nil {
-		return nil, nil, nil, Errors{newJSONDecodeError(err)}
-	}
-	defer func() { _ = r.Close() }() //nolint:errcheck // deferred gzip-reader close; nothing to do with the close error
+	defer func() { _ = body.Close() }()      //nolint:errcheck // deferred close; nothing to do with the close error
 
 	// Copy response body for debugging if needed
 	var respBody []byte
 	var respReader *bytes.Reader
+	var decodeFrom io.Reader = body
 	if c.debug {
-		respBody, respReader, err = copyResponseForDebug(r)
+		respBody, respReader, err = copyResponseForDebug(body)
 		if err != nil {
 			return nil, nil, nil, Errors{newJSONDecodeError(err)}
 		}
-		r = io.NopCloser(respReader)
+		decodeFrom = respReader
 	}
 
 	// Decode GraphQL response
-	rawData, gqlErrors := c.DecodeResponse(r)
+	rawData, gqlErrors := c.DecodeResponse(decodeFrom)
 
 	if c.debug && respReader != nil {
 		_, _ = respReader.Seek(0, io.SeekStart) //nolint:errcheck // *bytes.Reader.Seek(0, io.SeekStart) cannot fail

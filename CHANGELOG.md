@@ -2,6 +2,37 @@
 
 All notable changes to this project are documented in this file.
 
+## Unreleased
+
+Internal cleanup of the HTTP transport path: two divergent
+request-execution code paths are collapsed into one, fixing two latent
+bugs along the way. See `docs/adr/0001-public-api-surface.md` for the
+API-shape rationale.
+
+### Breaking changes
+
+- Removed the exported `Client.ExecuteRequest` method. The HTTP round
+  trip (send, gzip-decompress, reject non-200) is now an internal seam
+  used by `Query`/`Mutate` and the pre-built `Execute*` methods. To
+  drive transport manually, build the request with `Client.BuildRequest`
+  and send it with your own `*http.Client`; to swap the transport,
+  inject one via `Client.WithHTTPClient`. `BuildRequest` stays public.
+
+- A corrupt or invalid gzip response stream now classifies as
+  `ErrRequest` (`ErrCodeRequest`) instead of `ErrJSONDecode`
+  (`ErrCodeJSONDecode`) — a broken transport encoding is a transport
+  failure, not a JSON-decode failure. Update any
+  `errors.Is(err, ErrJSONDecode)` check that targeted gzip failures to
+  `errors.Is(err, ErrRequest)`.
+
+### Fixes
+
+- A non-200 response carrying a gzip-encoded body now reports the
+  decompressed body in the error message instead of the raw gzip magic
+  bytes.
+- The gzip reader is now closed after use (previously skipped through
+  the transport helper, leaving the trailing CRC unverified).
+
 ## v0.16.0 (2026-05-02)
 
 This release adds typed sentinel errors and ergonomic transport helpers

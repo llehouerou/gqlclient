@@ -1829,137 +1829,11 @@ func TestClient_ImmutablePattern(t *testing.T) {
 	)
 }
 
-// TestClient_executeRequest tests the executeRequest method that executes
-// the HTTP request and handles gzip decompression
-func TestClient_executeRequest(t *testing.T) {
+// TestClient_Query_invalidGzipData verifies that a 200 response whose body
+// is not valid gzip (despite Content-Encoding: gzip) surfaces as a transport
+// error via the public Query path.
+func TestClient_Query_invalidGzipData(t *testing.T) {
 	t.Parallel()
-
-	t.Run("executes request successfully", func(t *testing.T) {
-		t.Parallel()
-
-		mux := http.NewServeMux()
-		mux.HandleFunc("/graphql", func(w http.ResponseWriter, req *http.Request) {
-			w.Header().Set("Content-Type", "application/json")
-			mustWrite(w, `{"data":{"user":{"name":"Alice"}}}`)
-		})
-
-		client := graphql.NewClient(
-			"/graphql",
-			&http.Client{Transport: localRoundTripper{handler: mux}},
-		)
-
-		req, err := http.NewRequest(
-			http.MethodPost,
-			"/graphql",
-			strings.NewReader("{}"),
-		)
-		if err != nil {
-			t.Fatal(err)
-		}
-
-		resp, reader, execErr := client.ExecuteRequest(req)
-		if execErr != nil {
-			t.Fatalf("unexpected error: %v", execErr)
-		}
-		defer func() { _ = resp.Body.Close() }()
-
-		if resp.StatusCode != http.StatusOK {
-			t.Errorf("expected status 200, got %d", resp.StatusCode)
-		}
-
-		body, err := io.ReadAll(reader)
-		if err != nil {
-			t.Fatalf("failed to read response: %v", err)
-		}
-
-		expected := `{"data":{"user":{"name":"Alice"}}}`
-		if string(body) != expected {
-			t.Errorf("expected body %q, got %q", expected, string(body))
-		}
-	})
-
-	t.Run("handles non-200 status code", func(t *testing.T) {
-		t.Parallel()
-
-		mux := http.NewServeMux()
-		mux.HandleFunc("/graphql", func(w http.ResponseWriter, req *http.Request) {
-			http.Error(w, "internal server error", http.StatusInternalServerError)
-		})
-
-		client := graphql.NewClient(
-			"/graphql",
-			&http.Client{Transport: localRoundTripper{handler: mux}},
-		)
-
-		req, err := http.NewRequest(
-			http.MethodPost,
-			"/graphql",
-			strings.NewReader("{}"),
-		)
-		if err != nil {
-			t.Fatal(err)
-		}
-
-		_, _, execErr := client.ExecuteRequest(req) //nolint:bodyclose // ExecuteRequest closes the body before returning a non-nil error
-		if execErr == nil {
-			t.Fatal("expected error for non-200 status, got nil")
-		}
-
-		if !strings.Contains(execErr.Error(), "500") {
-			t.Errorf("expected error to mention 500 status, got %q", execErr.Error())
-		}
-	})
-
-	t.Run("handles gzip compression", func(t *testing.T) {
-		t.Parallel()
-
-		mux := http.NewServeMux()
-		mux.HandleFunc("/graphql", func(w http.ResponseWriter, req *http.Request) {
-			w.Header().Set("Content-Type", "application/json")
-			w.Header().Set("Content-Encoding", "gzip")
-
-			gzWriter := gzip.NewWriter(w)
-			defer func() { _ = gzWriter.Close() }()
-			_, _ = gzWriter.Write([]byte(`{"data":{"user":{"name":"Bob"}}}`))
-		})
-
-		client := graphql.NewClient(
-			"/graphql",
-			&http.Client{Transport: localRoundTripper{handler: mux}},
-		)
-
-		req, err := http.NewRequest(
-			http.MethodPost,
-			"/graphql",
-			strings.NewReader("{}"),
-		)
-		if err != nil {
-			t.Fatal(err)
-		}
-
-		resp, reader, execErr := client.ExecuteRequest(req)
-		if execErr != nil {
-			t.Fatalf("unexpected error: %v", execErr)
-		}
-		defer func() { _ = resp.Body.Close() }()
-
-		if resp.Header.Get("Content-Encoding") != "gzip" {
-			t.Errorf(
-				"expected Content-Encoding gzip, got %q",
-				resp.Header.Get("Content-Encoding"),
-			)
-		}
-
-		body, err := io.ReadAll(reader)
-		if err != nil {
-			t.Fatalf("failed to read response: %v", err)
-		}
-
-		expected := `{"data":{"user":{"name":"Bob"}}}`
-		if string(body) != expected {
-			t.Errorf("expected body %q, got %q", expected, string(body))
-		}
-	})
 
 	t.Run("handles invalid gzip data", func(t *testing.T) {
 		t.Parallel()
@@ -1998,9 +1872,13 @@ func TestClient_executeRequest(t *testing.T) {
 			t.Fatal("expected at least one error")
 		}
 
-		// Check error code
-		if code := errs[0].GetCode(); code != graphql.ErrCodeJSONDecode {
-			t.Errorf("expected error code %q, got %q", graphql.ErrCodeJSONDecode, code)
+		// A corrupt gzip stream is a transport failure, not a JSON-decode
+		// failure: it must classify as ErrRequest, never ErrJSONDecode.
+		if !errors.Is(err, graphql.ErrRequest) {
+			t.Errorf("errors.Is(err, ErrRequest) = false; want true (err = %v)", err)
+		}
+		if errors.Is(err, graphql.ErrJSONDecode) {
+			t.Error("errors.Is(err, ErrJSONDecode) = true; want false (gzip failure is transport, not decode)")
 		}
 
 		// Check error message contains gzip-related text
@@ -2011,6 +1889,42 @@ func TestClient_executeRequest(t *testing.T) {
 			)
 		}
 	})
+}
+
+// TestClient_Query_gzippedErrorStatusReadable is a regression test: a non-200
+// response with a gzip-compressed body must surface the DECOMPRESSED body in
+// the returned error, not the raw gzip magic bytes.
+func TestClient_Query_gzippedErrorStatusReadable(t *testing.T) {
+	t.Parallel()
+
+	mux := http.NewServeMux()
+	mux.HandleFunc("/graphql", func(w http.ResponseWriter, req *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.Header().Set("Content-Encoding", "gzip")
+		w.WriteHeader(http.StatusInternalServerError)
+
+		gzWriter := gzip.NewWriter(w)
+		defer func() { _ = gzWriter.Close() }()
+		_, _ = gzWriter.Write([]byte(`{"errors":[{"message":"internal boom"}]}`))
+	})
+
+	client := graphql.NewClient(
+		"/graphql",
+		&http.Client{Transport: localRoundTripper{handler: mux}},
+	)
+
+	var q struct {
+		User struct{ Name string }
+	}
+	if err := client.Query(context.Background(), &q, nil); err == nil {
+		t.Fatal("expected error for non-200 status, got nil")
+	} else if !strings.Contains(err.Error(), "internal boom") {
+		t.Errorf(
+			"expected decompressed body %q in error, got %q",
+			"internal boom",
+			err.Error(),
+		)
+	}
 }
 
 // TestClient_decodeResponse tests the decodeResponse method that decodes
@@ -2628,114 +2542,4 @@ func TestClient_UnmarshalGraphQL(t *testing.T) {
 	if got, want := result.Hero.Name, "Luke Skywalker"; got != want {
 		t.Errorf("got Hero.Name: %v, want: %v", got, want)
 	}
-}
-
-// TestClient_ExecuteRequest tests the ExecuteRequest method
-func TestClient_ExecuteRequest(t *testing.T) {
-	t.Parallel()
-
-	t.Run("successful request", func(t *testing.T) {
-		t.Parallel()
-
-		mux := http.NewServeMux()
-		mux.HandleFunc("/graphql", func(w http.ResponseWriter, req *http.Request) {
-			w.Header().Set("Content-Type", "application/json")
-			mustWrite(w, `{"data":{"test":"success"}}`)
-		})
-		client := graphql.NewClient(
-			"/graphql",
-			&http.Client{Transport: localRoundTripper{handler: mux}},
-		)
-
-		req, err := http.NewRequest(http.MethodPost, "/graphql", http.NoBody)
-		if err != nil {
-			t.Fatalf("failed to create request: %v", err)
-		}
-
-		resp, body, err := client.ExecuteRequest(req)
-		if err != nil {
-			t.Fatalf("unexpected error: %v", err)
-		}
-		defer func() { _ = resp.Body.Close() }()
-
-		if resp.StatusCode != http.StatusOK {
-			t.Errorf("got status code: %d, want: %d", resp.StatusCode, http.StatusOK)
-		}
-
-		data, err := io.ReadAll(body)
-		if err != nil {
-			t.Fatalf("failed to read body: %v", err)
-		}
-
-		if !strings.Contains(string(data), "success") {
-			t.Errorf("expected body to contain 'success', got: %s", string(data))
-		}
-	})
-
-	t.Run("gzip compressed response", func(t *testing.T) {
-		t.Parallel()
-
-		mux := http.NewServeMux()
-		mux.HandleFunc("/graphql", func(w http.ResponseWriter, req *http.Request) {
-			w.Header().Set("Content-Type", "application/json")
-			w.Header().Set("Content-Encoding", "gzip")
-
-			gzWriter := gzip.NewWriter(w)
-			defer func() { _ = gzWriter.Close() }()
-
-			_, _ = gzWriter.Write([]byte(`{"data":{"test":"compressed"}}`))
-		})
-		client := graphql.NewClient(
-			"/graphql",
-			&http.Client{Transport: localRoundTripper{handler: mux}},
-		)
-
-		req, err := http.NewRequest(http.MethodPost, "/graphql", http.NoBody)
-		if err != nil {
-			t.Fatalf("failed to create request: %v", err)
-		}
-
-		resp, body, err := client.ExecuteRequest(req)
-		if err != nil {
-			t.Fatalf("unexpected error: %v", err)
-		}
-		defer func() { _ = resp.Body.Close() }()
-
-		data, err := io.ReadAll(body)
-		if err != nil {
-			t.Fatalf("failed to read body: %v", err)
-		}
-
-		if !strings.Contains(string(data), "compressed") {
-			t.Errorf("expected body to contain 'compressed', got: %s", string(data))
-		}
-	})
-
-	t.Run("non-200 status code", func(t *testing.T) {
-		t.Parallel()
-
-		mux := http.NewServeMux()
-		mux.HandleFunc("/graphql", func(w http.ResponseWriter, req *http.Request) {
-			w.WriteHeader(http.StatusInternalServerError)
-			mustWrite(w, `{"error":"internal error"}`)
-		})
-		client := graphql.NewClient(
-			"/graphql",
-			&http.Client{Transport: localRoundTripper{handler: mux}},
-		)
-
-		req, err := http.NewRequest(http.MethodPost, "/graphql", http.NoBody)
-		if err != nil {
-			t.Fatalf("failed to create request: %v", err)
-		}
-
-		_, _, err = client.ExecuteRequest(req) //nolint:bodyclose // ExecuteRequest closes the body before returning a non-nil error
-		if err == nil {
-			t.Fatal("expected error for non-200 status code, got nil")
-		}
-
-		if !strings.Contains(err.Error(), "500") {
-			t.Errorf("expected error to mention status code 500, got: %v", err)
-		}
-	})
 }
