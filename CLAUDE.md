@@ -160,3 +160,17 @@ m := [][2]interface{}{
 4. **Pointer vs Value**: Pointer types in structs indicate optional/nullable GraphQL fields. Value types are required (append `!` in GraphQL schema).
 
 5. **Pre-built Queries**: `Exec()` and `ExecRaw()` methods allow executing dynamically-constructed query strings (useful for CLI tools or dynamic filtering).
+
+## Agent skills
+
+### Issue tracker
+
+Issues and PRDs live as GitHub issues at `github.com/llehouerou/gqlclient` (managed via the `gh` CLI). See `docs/agents/issue-tracker.md`.
+
+### Triage labels
+
+Five canonical triage roles, each mapped to a label string of the same name. See `docs/agents/triage-labels.md`.
+
+### Domain docs
+
+Single-context: one `CONTEXT.md` + `docs/adr/` at the repo root. See `docs/agents/domain.md`.
