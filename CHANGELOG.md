@@ -2,7 +2,7 @@
 
 All notable changes to this project are documented in this file.
 
-## Unreleased
+## v0.17.0 (2026-06-20)
 
 Internal cleanup of the request/response path: two divergent HTTP
 execution paths are collapsed into one (fixing two latent bugs), and
