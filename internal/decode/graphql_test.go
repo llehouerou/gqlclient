@@ -921,13 +921,38 @@ func TestUnmarshalGraphQL_interfaceFragment(t *testing.T) {
 	}
 }
 
-// Wrapper type for testing - follows the "Value" field convention
+// Wrapper type for testing - marked transparent via the `wrapped:"true"` tag
 type Wrapper[T any] struct {
-	Value T
+	Value T `wrapped:"true"`
 }
 
-func (w Wrapper[T]) GetGraphQLWrapped() T {
-	return w.Value
+// tagWrapper is detected purely by the `wrapped:"true"` tag (no method, and the
+// wrapped field is not named "Value"). It pins tag-based wrapper detection.
+type tagWrapper[T any] struct {
+	Inner T `wrapped:"true"`
+}
+
+// TestUnmarshalGraphQL_tagWrapper proves a tag-marked wrapper is transparent
+// during decoding: JSON lands directly in the wrapped field.
+func TestUnmarshalGraphQL_tagWrapper(t *testing.T) {
+	t.Parallel()
+
+	type query struct {
+		Data tagWrapper[string]
+	}
+	var got query
+	err := decode.UnmarshalGraphQL([]byte(`{
+		"data": "hello world"
+	}`), &got)
+	if err != nil {
+		t.Fatal(err)
+	}
+	want := query{
+		Data: tagWrapper[string]{Inner: "hello world"},
+	}
+	if !reflect.DeepEqual(got, want) {
+		t.Errorf("not equal\ngot:  %+v\nwant: %+v", got, want)
+	}
 }
 
 // TestUnmarshalGraphQL_basicWrapper tests basic wrapper type unmarshaling

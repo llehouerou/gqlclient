@@ -153,7 +153,7 @@ func writeStructQuery(
 	inline bool,
 ) error {
 	if v.IsValid() && reflectutil.IsWrapperType(v) {
-		wrapped := reflectutil.UnwrapValue(v)
+		wrapped := reflectutil.UnwrapValueField(v)
 		if wrapped.IsValid() {
 			err := writeQuery(
 				buf,

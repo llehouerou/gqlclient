@@ -9,7 +9,7 @@ import (
 )
 
 // Concurrent decode test exercises the per-type sync.Map caches added in
-// v0.15.0 (field lookup, ImplementsGraphQLType, hasGraphQLWrappedMethod,
+// v0.15.0 (field lookup, ImplementsGraphQLType, wrappedFieldIndex,
 // implementsJSONUnmarshaler) under contention. Run with `go test -race`
 // to catch any unsafe access.
 //

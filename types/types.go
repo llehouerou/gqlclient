@@ -21,16 +21,8 @@ type GraphQLType interface {
 // allocating per call.
 var GraphqlTypeInterface = reflect.TypeOf((*GraphQLType)(nil)).Elem()
 
-// GraphQLWrapper marks types that wrap a GraphQL value. Implementations
-// return the wrapped value via GetGraphQLWrapped, allowing the decoder to
-// unmarshal JSON directly into the wrapped field rather than the wrapper.
-//
-// Implementations must also expose an exported field named "Value" holding
-// the wrapped data, since unmarshaling needs a writable target.
-type GraphQLWrapper interface {
-	GetGraphQLWrapped() any
-}
-
-// GraphqlWrapperInterface is the reflect.Type of GraphQLWrapper, precomputed
-// for use with reflect.Type.Implements on hot paths.
-var GraphqlWrapperInterface = reflect.TypeOf((*GraphQLWrapper)(nil)).Elem()
+// The wrapper pattern (a struct made transparent so its single wrapped field is
+// spliced in place of the wrapper) is driven by the `wrapped:"true"` struct tag
+// — see WrappedTag in constants.go — not by an interface. A tag is the single
+// source of truth: it both marks the type as a wrapper and identifies the
+// writable field, so detection and access can never disagree.

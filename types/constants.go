@@ -12,6 +12,13 @@ const (
 	// construction.
 	ScalarTag = "scalar"
 
+	// WrappedTag marks the single field of a wrapper struct that holds the
+	// wrapped value. A struct carrying `wrapped:"true"` on one of its fields
+	// is treated as transparent: query construction and decoding both splice
+	// that field in place of the wrapper. It is the sole source of truth for
+	// the wrapper pattern (no method is involved).
+	WrappedTag = "wrapped"
+
 	// TypenameField is the GraphQL introspection field used for type
 	// discrimination in unions and interfaces.
 	TypenameField = "__typename"

@@ -17,19 +17,17 @@
 // This package defines and enforces the wrapper type convention used
 // throughout gqlclient:
 //
-// Types implementing the wrapper pattern must:
-//  1. Implement GetGraphQLWrapped() method returning the wrapped value
-//  2. Have an exported field named "Value" holding the wrapped data
-//
-// The GetGraphQLWrapped() method is used during query construction (read-only),
-// while the Value field is used during unmarshaling (needs to be writable).
+// A wrapper is a struct with exactly one field tagged `wrapped:"true"` (see
+// types.WrappedTag). That field is the single source of truth: it holds the
+// wrapped value, supplies the wrapped type during query construction, and is the
+// writable target during unmarshaling. No method is involved, so detection and
+// access can never disagree.
 //
 // Example:
 //
 //	type Wrapper[T any] struct {
-//	    Value T  // REQUIRED: Must be named "Value"
+//	    Value T `wrapped:"true"` // the wrapped field; any name works
 //	}
-//	func (w Wrapper[T]) GetGraphQLWrapped() T { return w.Value }
 //
 // # Unwrapping Decision Tree
 //
@@ -40,19 +38,10 @@
 //     Example: **int -> int, or interface{} containing string -> string
 //     -> Use UnwrapToConcreteValue()
 //
-//  2. UNWRAPPING FOR QUERY CONSTRUCTION
-//     Building a GraphQL query and need the wrapped value via method call?
-//     Example: MyWrapper{Value: "hello"}.GetGraphQLWrapped() -> "hello"
-//     -> Use UnwrapValue()
-//
-//  3. UNWRAPPING FOR UNMARSHALING
-//     Unmarshaling JSON into a wrapper type and need writable field access?
-//     Example: Need to set MyWrapper.Value field during JSON decode
-//     -> Use UnwrapValueField()
-//
-//  4. SAFE UNWRAPPING WITH FALLBACK
-//     Not sure if the value is a wrapper type? Want original if not?
-//     -> Use UnwrapValueOrOriginal()
+//  2. UNWRAPPING A WRAPPER TYPE (query construction OR unmarshaling)
+//     Need the wrapped field — its type for the selection set, or a writable
+//     reference for decoding?
+//     -> Use UnwrapValueField() (guard with IsWrapperType() when needed)
 //
 // IMPORTANT: These are orthogonal - you may need to unwrap pointers first,
 // then unwrap wrapper types. See unwrap.go for detailed examples and scenarios.

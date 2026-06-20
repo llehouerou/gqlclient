@@ -570,15 +570,11 @@ type Wrapped struct {
 }
 
 type Wrapper[T any] struct {
-	Value T
+	Value T `wrapped:"true"`
 }
 
 func (w Wrapper[T]) GetGraphQLType() string {
 	return "wrapper"
-}
-
-func (w Wrapper[T]) GetGraphQLWrapped() T {
-	return w.Value
 }
 
 func (w Wrapper[T]) GetInnerLayer() ContainerLayer[T] {

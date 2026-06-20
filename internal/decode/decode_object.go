@@ -77,7 +77,7 @@ func (d *decoder) findFieldsForKey(
 				unwrapped := reflectutil.UnwrapValueField(f)
 				if unwrapped.IsValid() {
 					// Wrapper type detected. Unmarshal directly into
-					// the unwrapped Value field, bypassing the wrapper.
+					// the `wrapped:"true"` field, bypassing the wrapper.
 					f = unwrapped
 				}
 				// Check for special embedded json

@@ -1495,15 +1495,11 @@ type Wrapped struct {
 type Wrappeds []Wrapped
 
 type Wrapper[T any] struct {
-	Wrapped T
+	Wrapped T `wrapped:"true"`
 }
 
 func (w Wrapper[T]) GetGraphQLType() string {
 	return "wrapper"
-}
-
-func (w Wrapper[T]) GetGraphQLWrapped() T {
-	return w.Wrapped
 }
 
 func TestWrapper(t *testing.T) {
@@ -1515,6 +1511,35 @@ func TestWrapper(t *testing.T) {
 	if err != nil {
 		t.Error(err)
 	} else if got != want {
+		t.Errorf("\ngot:  %q\nwant: %q\n", got, want)
+	}
+}
+
+// tagWrapper is a wrapper detected by the `wrapped:"true"` tag ALONE — it has
+// no GetGraphQLWrapped method, and its wrapped field is deliberately NOT named
+// "Value", proving detection rides on the tag, not on a method or a field name.
+type tagWrapper[T any] struct {
+	Inner T `wrapped:"true"`
+}
+
+// TestWrapper_TagOnly proves a tag-marked wrapper is transparent during query
+// construction: the selection set is that of the wrapped type, the wrapper
+// struct itself is spliced out.
+func TestWrapper_TagOnly(t *testing.T) {
+	t.Parallel()
+
+	type Query struct {
+		Container struct {
+			Single tagWrapper[Wrapped] `graphql:"single"`
+		} `graphql:"container"`
+	}
+	q := Query{}
+	got, err := ConstructQuery(q, nil)
+	if err != nil {
+		t.Errorf("unexpected error: %v", err)
+	}
+	want := `{container{single{value}}}`
+	if got != want {
 		t.Errorf("\ngot:  %q\nwant: %q\n", got, want)
 	}
 }
@@ -1744,13 +1769,21 @@ func TestWrapper_ScalarTag(t *testing.T) {
 	}
 }
 
-// TestWrapper_EmbeddedAnonymous documents Go method promotion with Wrapper types
+// TestWrapper_EmbeddedAnonymous documents how anonymous Wrapper[T] embedding
+// interacts with the tag-based wrapper pattern.
 //
-// KEY INSIGHT: Anonymous Wrapper[T] fields promote BOTH methods to the parent:
-//  1. GetGraphQLType() → field name becomes "wrapper"
-//  2. GetGraphQLWrapped() → unwraps, skipping sibling fields
+// KEY INSIGHT: wrapper transparency is driven by the `wrapped:"true"` tag on the
+// concrete Wrapper[T] type's field — it does NOT leak through anonymous
+// embedding. The embedding struct's own fields carry no such tag, so it is not
+// treated as a wrapper and its sibling fields are PRESERVED (no longer silently
+// dropped as they were under the old method-promotion design).
 //
-// RECOMMENDATION: Don't use anonymous Wrapper[T] with sibling fields!
+// What still propagates via embedding is GetGraphQLType() (a normal Go promoted
+// method), so an embedding struct's field name still becomes "wrapper" and the
+// wrapped selection ends up nested one extra level.
+//
+// RECOMMENDATION: still prefer named Wrapper[T] fields — anonymous embedding
+// muddles field naming even though it no longer eats siblings.
 func TestWrapper_EmbeddedAnonymous(t *testing.T) {
 	t.Parallel()
 
@@ -1772,10 +1805,10 @@ func TestWrapper_EmbeddedAnonymous(t *testing.T) {
 		if err != nil {
 			t.Errorf("unexpected error: %v", err)
 		}
-		// Go method promotion causes Container to inherit:
-		//   - GetGraphQLType() → "wrapper" (overrides graphql:"container")
-		//   - GetGraphQLWrapped() → returns Wrapped{}, skips Other field
-		want := `{wrapper{value}}`
+		// Promoted GetGraphQLType() renames Container to "wrapper", and the
+		// embedded wrapper nests one more "wrapper" level. Crucially, Other is
+		// preserved — transparency does not leak through embedding anymore.
+		want := `{wrapper{wrapper{wrapper{value}},other}}`
 		if got != want {
 			t.Errorf("\ngot:  %q\nwant: %q\n", got, want)
 		}
@@ -1794,8 +1827,9 @@ func TestWrapper_EmbeddedAnonymous(t *testing.T) {
 		if err != nil {
 			t.Errorf("unexpected error: %v", err)
 		}
-		// Same method promotion: Container becomes "wrapper", gets unwrapped
-		want := `{wrapper{value}}`
+		// Promoted GetGraphQLType() renames Container to "wrapper"; the embedded
+		// wrapper adds another "wrapper" level. Container itself is NOT unwrapped.
+		want := `{wrapper{wrapper{wrapper{value}}}}`
 		if got != want {
 			t.Errorf("\ngot:  %q\nwant: %q\n", got, want)
 		}
@@ -1815,8 +1849,9 @@ func TestWrapper_EmbeddedAnonymous(t *testing.T) {
 		if err != nil {
 			t.Errorf("unexpected error: %v", err)
 		}
-		// Direct anonymous Wrapper: same issue, methods promoted to Container
-		want := `{wrapper{value}}`
+		// Promoted GetGraphQLType() renames Container to "wrapper"; the embedded
+		// Wrapper[Wrapped] unwraps to {value}. Other is preserved.
+		want := `{wrapper{wrapper{value},other}}`
 		if got != want {
 			t.Errorf("\ngot:  %q\nwant: %q\n", got, want)
 		}
@@ -1836,9 +1871,10 @@ func TestWrapper_EmbeddedAnonymous(t *testing.T) {
 		if err != nil {
 			t.Errorf("unexpected error: %v", err)
 		}
-		// Named field: Container keeps graphql:"container", both fields work!
-		// Embed.Wrapper field implements GetGraphQLType() → becomes "wrapper"
-		want := `{container{wrapper{value},other}}`
+		// Named field: Container keeps graphql:"container". The Embed field's type
+		// (EmbeddedWrapper) promotes GetGraphQLType() → "wrapper", and the wrapper
+		// it embeds nests another "wrapper" level. Other is preserved.
+		want := `{container{wrapper{wrapper{value}},other}}`
 		if got != want {
 			t.Errorf("\ngot:  %q\nwant: %q\n", got, want)
 		}

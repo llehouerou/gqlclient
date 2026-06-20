@@ -129,7 +129,8 @@ func TestFindFieldsForKey(t *testing.T) {
 
 		fields, _, _ := d.findFieldsForKey("wrapped", rawMessageValue)
 
-		// Even without GetGraphQLWrapped, the field should be found
+		// StringWrapper carries no `wrapped:"true"` tag, so it is a plain struct
+		// (not a wrapper) and the field is found by its normal name.
 		if !fields[0].field.IsValid() {
 			t.Error("expected valid field")
 		}

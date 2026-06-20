@@ -15,16 +15,15 @@ import (
 //    - UnwrapToConcreteValue() - recursively unwraps pointers/interfaces
 //
 // 2. WRAPPER TYPE UNWRAPPING: GraphQL-specific wrapper pattern
-//    - UnwrapValue() - unwraps via GetGraphQLWrapped() method (query construction)
-//    - UnwrapValueField() - unwraps via Value field (unmarshaling)
-//    - UnwrapValueOrOriginal() - unwraps or returns original
+//    - IsWrapperType()     - reports whether a value is a wrapper struct
+//    - UnwrapValueField()  - returns the wrapped field (query AND unmarshaling)
 //
 // WRAPPER TYPE CONVENTION:
-// Types implementing the wrapper pattern must:
-// - Implement GetGraphQLWrapped() method that returns the wrapped value
-// - Have an exported field named "Value" that holds the wrapped data
-// - The "Value" field is used during unmarshaling (needs to be writable)
-// - The GetGraphQLWrapped() method is used during query construction
+// A wrapper is a struct with exactly one field tagged `wrapped:"true"`. That
+// field is the single source of truth: it holds the wrapped value, supplies the
+// wrapped type during query construction, and is the writable target during
+// unmarshaling. No method is involved — detection and access both ride on the
+// tag, so there is nothing to keep in sync.
 //
 // CHOOSING THE RIGHT UNWRAP FUNCTION - Decision Tree:
 //
@@ -33,54 +32,15 @@ import (
 //    Example: **int -> int, or interface{} containing string -> string
 //    -> Use UnwrapToConcreteValue()
 //
-//    Common scenarios:
-//    - Examining the actual type of a value for reflection operations
-//    - Accessing struct fields through pointer indirection
-//    - Getting the element type from a slice or array
-//
-// 2. UNWRAPPING GRAPHQL WRAPPER TYPES FOR QUERY CONSTRUCTION
-//    Building a GraphQL query and need the wrapped value via method call?
-//    Example: MyWrapper{Value: "hello"}.GetGraphQLWrapped() -> "hello"
-//    -> Use UnwrapValue()
-//
-//    Common scenarios:
-//    - Query construction where you need the actual GraphQL value
-//    - Reading wrapper types that implement GetGraphQLWrapped()
-//
-// 3. UNWRAPPING GRAPHQL WRAPPER TYPES FOR UNMARSHALING
-//    Unmarshaling JSON into a wrapper type and need writable field access?
-//    Example: Need to set MyWrapper.Value field during JSON decode
-//    -> Use UnwrapValueField()
-//
-//    Common scenarios:
-//    - JSON unmarshaling into wrapper types
-//    - Setting values in wrapper type fields during decoding
-//    - Any operation requiring write access to the wrapped value
-//
-// 4. SAFE UNWRAPPING WITH FALLBACK
-//    Not sure if the value is a wrapper type? Want original if not?
-//    Example: Try to unwrap, but use the value as-is if it's not a wrapper
-//    -> Use UnwrapValueOrOriginal()
-//
-//    Common scenarios:
-//    - Defensive unwrapping where the type may or may not be a wrapper
-//    - Generic code that handles both wrapper and non-wrapper types
+// 2. UNWRAPPING A GRAPHQL WRAPPER TYPE
+//    Need the wrapped field (its type for query construction, or a writable
+//    reference for unmarshaling)?
+//    -> Use UnwrapValueField() (guard with IsWrapperType() when needed)
 //
 // IMPORTANT: These functions are orthogonal:
 // - UnwrapToConcreteValue() handles language-level indirection (pointers/interfaces)
-// - UnwrapValue/UnwrapValueField/UnwrapValueOrOriginal() handle GraphQL wrapper types
+// - IsWrapperType/UnwrapValueField() handle GraphQL wrapper types
 // - You may need to use BOTH in sequence: first unwrap pointers, then unwrap wrapper
-
-const (
-	// WrapperMethodName is the name of the method that unwraps container types.
-	// Types implementing this method should follow the wrapper convention:
-	// they must have an exported field named "Value" that holds the wrapped data.
-	WrapperMethodName = "GetGraphQLWrapped"
-
-	// WrapperFieldName is the required name of the field holding wrapped data
-	// in types that implement the wrapper pattern (GetGraphQLWrapped method).
-	WrapperFieldName = "Value"
-)
 
 // ============================================================================
 // POINTER/INTERFACE UNWRAPPING
@@ -115,27 +75,34 @@ func UnwrapToConcreteValue(v reflect.Value) reflect.Value {
 // WRAPPER TYPE UNWRAPPING
 // ============================================================================
 
-// hasGraphQLWrappedMethodCache memoizes per-type "does this concrete type
-// expose a GetGraphQLWrapped method" answers. We can't use
-// t.Implements(GraphqlWrapperInterface) because generic wrappers declare
-// GetGraphQLWrapped() T (not any), so MethodByName is the source of truth
-// — but the answer is still constant per type, so we cache it.
-var hasGraphQLWrappedMethodCache sync.Map // map[reflect.Type]bool
+// wrappedFieldIndexCache memoizes, per reflect.Type, the index of the field
+// tagged `wrapped:"true"` (or -1 when the type is not a wrapper). The answer is
+// constant per type, so caching turns the field scan into a sync.Map load on
+// the hot path. It also unifies detection and access: both IsWrapperType and
+// UnwrapValueField read the same cached index.
+var wrappedFieldIndexCache sync.Map // map[reflect.Type]int
 
-// hasGraphQLWrappedMethod reports whether a value of type t (or its
-// addressable form) has a GetGraphQLWrapped method in its method set.
-// Result is cached per reflect.Type.
-func hasGraphQLWrappedMethod(t reflect.Type) bool {
-	if cached, ok := hasGraphQLWrappedMethodCache.Load(t); ok {
-		return cached.(bool) //nolint:errcheck // hasGraphQLWrappedMethodCache only ever stores bool
+// wrappedFieldIndex returns the index of t's `wrapped:"true"` field, or -1 if t
+// is not a struct or has no such field. The first matching field wins.
+func wrappedFieldIndex(t reflect.Type) int {
+	if cached, ok := wrappedFieldIndexCache.Load(t); ok {
+		return cached.(int) //nolint:errcheck // wrappedFieldIndexCache only ever stores int
 	}
-	has := reflect.Zero(t).MethodByName(WrapperMethodName).IsValid()
-	hasGraphQLWrappedMethodCache.Store(t, has)
-	return has
+	idx := -1
+	if t.Kind() == reflect.Struct {
+		for i := range t.NumField() {
+			if IsTrue(t.Field(i).Tag.Get(types.WrappedTag)) {
+				idx = i
+				break
+			}
+		}
+	}
+	wrappedFieldIndexCache.Store(t, idx)
+	return idx
 }
 
 // IsWrapperType reports whether the given reflect.Value is a wrapper type.
-// A wrapper type is one that implements the GetGraphQLWrapped() method.
+// A wrapper type is a struct with a field tagged `wrapped:"true"`.
 // Returns false if the value is invalid or nil.
 func IsWrapperType(v reflect.Value) bool {
 	if !v.IsValid() {
@@ -154,76 +121,21 @@ func IsWrapperType(v reflect.Value) bool {
 		return false
 	}
 
-	return hasGraphQLWrappedMethod(v.Type())
+	return wrappedFieldIndex(v.Type()) >= 0
 }
 
-// UnwrapValue unwraps a wrapper type by calling its GetGraphQLWrapped() method.
-// If the value is not a wrapper type, returns an invalid reflect.Value.
-// If the value is a wrapper type, calls GetGraphQLWrapped() and returns the
-// result.
+// UnwrapValueField returns the field tagged `wrapped:"true"` of a wrapper type.
+// It is used both for query construction (where the field's type drives the
+// selection set) and for unmarshaling (where the returned field is the writable
+// decode target — callers pass an addressable value to get a settable field).
 //
-// Note: This is used for query construction. For unmarshaling, the wrapped data
-// must be stored in a field named "Value" per the wrapper convention - use
-// UnwrapValueField() instead.
-//
-// Example:
-//
-//	type MyWrapper struct {
-//	    Value string
-//	}
-//	func (w MyWrapper) GetGraphQLWrapped() interface{} {
-//	    return w.Value
-//	}
-//
-//	w := MyWrapper{Value: "hello"}
-//	v := reflect.ValueOf(w)
-//	unwrapped := UnwrapValue(v) // returns reflect.Value of "hello"
-func UnwrapValue(v reflect.Value) reflect.Value {
-	if !IsWrapperType(v) {
-		return reflect.Value{}
-	}
-
-	// Unwrap pointers and interfaces to get to the struct
-	for v.Kind() == reflect.Ptr || v.Kind() == reflect.Interface {
-		v = v.Elem()
-	}
-
-	if !v.IsValid() {
-		return reflect.Value{}
-	}
-
-	// Call GetGraphQLWrapped() method
-	method := v.MethodByName(WrapperMethodName)
-	if !method.IsValid() {
-		return reflect.Value{}
-	}
-
-	// Call the method with no arguments and get the first return value
-	results := method.Call(nil)
-	if len(results) == 0 {
-		return reflect.Value{}
-	}
-
-	return results[0]
-}
-
-// UnwrapValueField unwraps a wrapper type by accessing its Value field.
-// This is specifically for unmarshaling where we need a writable field
-// reference.
-//
-// If the value is not a wrapper type or doesn't have a Value field, returns
+// If the value is not a wrapper type (or is a nil pointer/interface), returns
 // an invalid reflect.Value.
 //
-// Convention: Wrapper types MUST have an exported field named "Value" for
-// unmarshaling.
-//
 // Example:
 //
 //	type MyWrapper struct {
-//	    Value string
-//	}
-//	func (w MyWrapper) GetGraphQLWrapped() interface{} {
-//	    return w.Value
+//	    Value string `wrapped:"true"`
 //	}
 //
 //	w := MyWrapper{}
@@ -231,56 +143,28 @@ func UnwrapValue(v reflect.Value) reflect.Value {
 //	field := UnwrapValueField(v) // returns writable reference to Value field
 //	field.SetString("hello") // now w.Value == "hello"
 func UnwrapValueField(v reflect.Value) reflect.Value {
-	if !IsWrapperType(v) {
+	if !v.IsValid() {
 		return reflect.Value{}
 	}
 
 	// Unwrap pointers and interfaces to get to the struct
 	for v.Kind() == reflect.Ptr || v.Kind() == reflect.Interface {
+		if v.IsNil() {
+			return reflect.Value{}
+		}
 		v = v.Elem()
 	}
 
-	if !v.IsValid() {
+	if !v.IsValid() || v.Kind() != reflect.Struct {
 		return reflect.Value{}
 	}
 
-	// Access the Value field per wrapper convention
-	valueField := v.FieldByName(WrapperFieldName)
-	if !valueField.IsValid() {
+	idx := wrappedFieldIndex(v.Type())
+	if idx < 0 {
 		return reflect.Value{}
 	}
 
-	return valueField
-}
-
-// UnwrapValueOrOriginal unwraps a wrapper type if possible, otherwise returns
-// the original value. This is a convenience function that always returns a
-// valid value for further processing.
-//
-// Example:
-//
-//	type MyWrapper struct {
-//	    Value string
-//	}
-//	func (w MyWrapper) GetGraphQLWrapped() interface{} {
-//	    return w.Value
-//	}
-//
-//	// With wrapper type
-//	w := MyWrapper{Value: "hello"}
-//	v := reflect.ValueOf(w)
-//	result := UnwrapValueOrOriginal(v) // returns reflect.Value of "hello"
-//
-//	// With non-wrapper type
-//	s := "world"
-//	v := reflect.ValueOf(s)
-//	result := UnwrapValueOrOriginal(v) // returns reflect.Value of "world"
-func UnwrapValueOrOriginal(v reflect.Value) reflect.Value {
-	unwrapped := UnwrapValue(v)
-	if unwrapped.IsValid() {
-		return unwrapped
-	}
-	return v
+	return v.Field(idx)
 }
 
 // ============================================================================

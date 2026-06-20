@@ -5,7 +5,7 @@
 //   - Inline fragments with __typename discrimination
 //   - Template-based array unmarshaling
 //   - Ordered maps ([][2]interface{})
-//   - Wrapper types with GetGraphQLWrapped()
+//   - Wrapper types marked with the `wrapped:"true"` field tag
 //
 // # Architecture
 //
@@ -57,16 +57,14 @@
 //
 // # Wrapper Types
 //
-// The decoder transparently unwraps container types that implement
-// GetGraphQLWrapped(). During unmarshaling, JSON data is written directly
-// into the wrapper's Value field.
-//
-// Convention: Wrapper types must have an exported field named "Value".
+// The decoder transparently unwraps wrapper structs: a struct with a field
+// tagged `wrapped:"true"` is bypassed, and JSON data is written directly into
+// that field. The tag is the single source of truth — it marks the wrapper and
+// identifies the writable field.
 //
 // Example:
 //
 //	type Wrapper[T any] struct {
-//	    Value T  // REQUIRED: Must be named "Value"
+//	    Value T `wrapped:"true"` // the wrapped field; any name works
 //	}
-//	func (w Wrapper[T]) GetGraphQLWrapped() T { return w.Value }
 package decode

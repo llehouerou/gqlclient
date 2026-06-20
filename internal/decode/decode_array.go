@@ -15,8 +15,8 @@ func (d *decoder) decodeArrayValue() error {
 		v := d.vs.top(i)
 		v = reflectutil.UnwrapToConcreteValue(v)
 
-		// Check if this is a wrapper type (has GetGraphQLWrapped method).
-		// If so, unwrap to get the actual slice field per "Value" convention.
+		// Check if this is a wrapper type (has a `wrapped:"true"` field).
+		// If so, unwrap to get the actual slice field.
 		if v.IsValid() {
 			unwrapped := reflectutil.UnwrapValueField(v)
 			if unwrapped.IsValid() {

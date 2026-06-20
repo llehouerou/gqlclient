@@ -5,21 +5,21 @@ import (
 	"testing"
 )
 
-// Test types for wrapper pattern
+// Test types for the wrapper pattern (marked by the `wrapped:"true"` tag).
 type TestWrapper[T any] struct {
-	Value T
+	Value T `wrapped:"true"`
 }
 
-func (w TestWrapper[T]) GetGraphQLWrapped() T {
-	return w.Value
+// TestNamedWrapper proves the wrapped field need not be named "Value" — the tag
+// is the sole marker.
+type TestNamedWrapper struct {
+	Data string `wrapped:"true"`
 }
 
-type TestWrapperNoValueField struct {
-	Data string
-}
-
-func (w TestWrapperNoValueField) GetGraphQLWrapped() string {
-	return w.Data
+// NestedWrapper's wrapped field is itself a wrapper. UnwrapValueField returns
+// that inner wrapper (it unwraps one level; it does not recurse).
+type NestedWrapper struct {
+	Value TestWrapper[string] `wrapped:"true"`
 }
 
 // Test types for GraphQLType interface
@@ -100,7 +100,7 @@ func TestIsWrapperType(t *testing.T) {
 
 	wrapper := TestWrapper[string]{Value: "test"}
 	pointerWrapper := &TestWrapper[int]{Value: 42}
-	noValueField := TestWrapperNoValueField{Data: "test"}
+	namedWrapper := TestNamedWrapper{Data: "test"}
 	regular := RegularStruct{Field: "test"}
 
 	tests := []struct {
@@ -119,8 +119,8 @@ func TestIsWrapperType(t *testing.T) {
 			expected: true,
 		},
 		{
-			name:     "TestWrapperNoValueField is a wrapper type (has method)",
-			value:    reflect.ValueOf(noValueField),
+			name:     "Wrapper with non-Value field name is a wrapper type",
+			value:    reflect.ValueOf(namedWrapper),
 			expected: true,
 		},
 		{
@@ -157,74 +157,6 @@ func TestIsWrapperType(t *testing.T) {
 	}
 }
 
-func TestUnwrapValue(t *testing.T) {
-	t.Parallel()
-
-	wrapper := TestWrapper[string]{Value: "test"}
-	pointerWrapper := &TestWrapper[int]{Value: 42}
-	regular := RegularStruct{Field: "test"}
-
-	tests := []struct {
-		name      string
-		value     reflect.Value
-		wantValid bool
-		wantValue any
-	}{
-		{
-			name:      "Unwrap TestWrapper calls GetGraphQLWrapped",
-			value:     reflect.ValueOf(wrapper),
-			wantValid: true,
-			wantValue: "test",
-		},
-		{
-			name:      "Unwrap pointer to TestWrapper calls GetGraphQLWrapped",
-			value:     reflect.ValueOf(pointerWrapper),
-			wantValid: true,
-			wantValue: 42,
-		},
-		{
-			name:      "Unwrap regular struct returns invalid value",
-			value:     reflect.ValueOf(regular),
-			wantValid: false,
-			wantValue: nil,
-		},
-		{
-			name:      "Unwrap invalid value returns invalid value",
-			value:     reflect.Value{},
-			wantValid: false,
-			wantValue: nil,
-		},
-		{
-			name:      "Unwrap nil pointer returns invalid value",
-			value:     reflect.ValueOf((*TestWrapper[string])(nil)),
-			wantValid: false,
-			wantValue: nil,
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			t.Parallel()
-
-			result := UnwrapValue(tt.value)
-			if result.IsValid() != tt.wantValid {
-				t.Errorf(
-					"UnwrapValue().IsValid() = %v, want %v",
-					result.IsValid(),
-					tt.wantValid,
-				)
-			}
-			if tt.wantValid && result.Interface() != tt.wantValue {
-				t.Errorf(
-					"UnwrapValue().Interface() = %v, want %v",
-					result.Interface(),
-					tt.wantValue,
-				)
-			}
-		})
-	}
-}
-
 func TestUnwrapValueField(t *testing.T) {
 	t.Parallel()
 
@@ -239,13 +171,13 @@ func TestUnwrapValueField(t *testing.T) {
 		wantValue any
 	}{
 		{
-			name:      "Unwrap TestWrapper returns Value field",
+			name:      "Unwrap TestWrapper returns wrapped field",
 			value:     reflect.ValueOf(wrapper),
 			wantValid: true,
 			wantValue: "test",
 		},
 		{
-			name:      "Unwrap pointer to TestWrapper returns Value field",
+			name:      "Unwrap pointer to TestWrapper returns wrapped field",
 			value:     reflect.ValueOf(pointerWrapper),
 			wantValid: true,
 			wantValue: 42,
@@ -285,48 +217,6 @@ func TestUnwrapValueField(t *testing.T) {
 			if tt.wantValid && result.Interface() != tt.wantValue {
 				t.Errorf(
 					"UnwrapValueField().Interface() = %v, want %v",
-					result.Interface(),
-					tt.wantValue,
-				)
-			}
-		})
-	}
-}
-
-func TestUnwrapValueOrOriginal(t *testing.T) {
-	t.Parallel()
-
-	wrapper := TestWrapper[string]{Value: "test"}
-	regular := RegularStruct{Field: "test"}
-
-	tests := []struct {
-		name      string
-		value     reflect.Value
-		wantValue any
-	}{
-		{
-			name:      "Wrapper returns unwrapped value",
-			value:     reflect.ValueOf(wrapper),
-			wantValue: "test",
-		},
-		{
-			name:      "Regular struct returns original value",
-			value:     reflect.ValueOf(regular),
-			wantValue: regular,
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			t.Parallel()
-
-			result := UnwrapValueOrOriginal(tt.value)
-			if !result.IsValid() {
-				t.Error("UnwrapValueOrOriginal() returned invalid value")
-			}
-			if result.Interface() != tt.wantValue {
-				t.Errorf(
-					"UnwrapValueOrOriginal() = %v, want %v",
 					result.Interface(),
 					tt.wantValue,
 				)
@@ -452,28 +342,19 @@ func TestGetGraphQLTypeFromType(t *testing.T) {
 	}
 }
 
-// Nested wrapper for testing deep unwrapping
-type NestedWrapper struct {
-	Value TestWrapper[string]
-}
-
-func (w NestedWrapper) GetGraphQLWrapped() TestWrapper[string] {
-	return w.Value
-}
-
-func TestUnwrapValue_deeplyNested(t *testing.T) {
+func TestUnwrapValueField_nested(t *testing.T) {
 	t.Parallel()
 
-	// Test deeply nested wrappers
+	// The wrapped field is itself a wrapper: UnwrapValueField returns it as-is
+	// (one level of unwrapping, no recursion).
 	innerWrapper := TestWrapper[string]{Value: "deep"}
 	outerWrapper := NestedWrapper{Value: innerWrapper}
 
-	result := UnwrapValue(reflect.ValueOf(outerWrapper))
+	result := UnwrapValueField(reflect.ValueOf(outerWrapper))
 	if !result.IsValid() {
-		t.Fatal("UnwrapValue returned invalid value for nested wrapper")
+		t.Fatal("UnwrapValueField returned invalid value for nested wrapper")
 	}
 
-	// Result should be the inner TestWrapper[string]
 	innerResult, ok := result.Interface().(TestWrapper[string])
 	if !ok {
 		t.Fatalf("got type: %T, want: TestWrapper[string]", result.Interface())
@@ -484,16 +365,16 @@ func TestUnwrapValue_deeplyNested(t *testing.T) {
 	}
 }
 
-func TestUnwrapValue_interfaceWrapper(t *testing.T) {
+func TestUnwrapValueField_interfaceWrapper(t *testing.T) {
 	t.Parallel()
 
-	// Test unwrapping through interface type
+	// Unwrap through an interface holding the wrapper.
 	wrapper := TestWrapper[string]{Value: "test"}
 	var iface any = wrapper
 
-	result := UnwrapValue(reflect.ValueOf(iface))
+	result := UnwrapValueField(reflect.ValueOf(iface))
 	if !result.IsValid() {
-		t.Fatal("UnwrapValue returned invalid value for interface wrapper")
+		t.Fatal("UnwrapValueField returned invalid value for interface wrapper")
 	}
 
 	if result.Interface() != "test" {
@@ -501,32 +382,33 @@ func TestUnwrapValue_interfaceWrapper(t *testing.T) {
 	}
 }
 
-func TestUnwrapValueField_noValueField(t *testing.T) {
+func TestUnwrapValueField_nonValueFieldName(t *testing.T) {
 	t.Parallel()
 
-	// Test wrapper without a Value field
-	wrapper := TestWrapperNoValueField{Data: "test"}
+	// The wrapped field is named "Data", not "Value": the tag, not the name,
+	// drives unwrapping.
+	wrapper := TestNamedWrapper{Data: "test"}
 
 	result := UnwrapValueField(reflect.ValueOf(wrapper))
-	if result.IsValid() {
-		t.Errorf(
-			"UnwrapValueField should return invalid for wrapper without Value field, got: %v",
-			result,
-		)
+	if !result.IsValid() {
+		t.Fatal("UnwrapValueField returned invalid for tag-marked non-Value field")
+	}
+	if result.Interface() != "test" {
+		t.Errorf("got: %v, want: %q", result.Interface(), "test")
 	}
 }
 
-func TestUnwrapValue_multiLevelPointer(t *testing.T) {
+func TestUnwrapValueField_multiLevelPointer(t *testing.T) {
 	t.Parallel()
 
-	// Test multi-level pointer unwrapping
+	// Multi-level pointer unwrapping.
 	wrapper := TestWrapper[int]{Value: 99}
 	ptr1 := &wrapper
 	ptr2 := &ptr1
 
-	result := UnwrapValue(reflect.ValueOf(ptr2))
+	result := UnwrapValueField(reflect.ValueOf(ptr2))
 	if !result.IsValid() {
-		t.Fatal("UnwrapValue returned invalid value for double pointer")
+		t.Fatal("UnwrapValueField returned invalid value for double pointer")
 	}
 
 	if result.Interface() != 99 {
@@ -570,33 +452,6 @@ func TestGetGraphQLType_interfaceValue(t *testing.T) {
 	}
 }
 
-// Edge case tests for improved coverage
-
-// WrapperWithNoResults implements GetGraphQLWrapped but returns nothing (malformed)
-type WrapperWithNoResults struct {
-	Value string
-}
-
-func (w WrapperWithNoResults) GetGraphQLWrapped() {
-	// This method returns nothing (void), which is malformed but we need to handle it
-}
-
-func TestUnwrapValue_methodReturnsNoResults(t *testing.T) {
-	t.Parallel()
-
-	// Edge case: GetGraphQLWrapped method exists but returns no values
-	wrapper := WrapperWithNoResults{Value: "test"}
-	v := reflect.ValueOf(wrapper)
-
-	result := UnwrapValue(v)
-	if result.IsValid() {
-		t.Errorf(
-			"UnwrapValue should return invalid value when method returns no results, got: %v",
-			result,
-		)
-	}
-}
-
 func TestIsWrapperType_interfaceContainingNil(t *testing.T) {
 	t.Parallel()
 
@@ -620,27 +475,6 @@ func TestIsWrapperType_invalidValue(t *testing.T) {
 	result := IsWrapperType(v)
 	if result {
 		t.Error("IsWrapperType should return false for invalid value")
-	}
-}
-
-func TestUnwrapValue_becomesInvalidAfterUnwrap(t *testing.T) {
-	t.Parallel()
-
-	// Edge case: After unwrapping pointers, the value becomes invalid
-	// This is hard to trigger naturally, but we can test with deeply nested nil pointers
-	var ptr *TestWrapper[string] = nil
-	ptrToPtr := &ptr // pointer to nil pointer
-
-	v := reflect.ValueOf(ptrToPtr)
-
-	// First unwrap gets us to ptr (which is nil)
-	// IsWrapperType will check and find it's nil, returning false
-	result := UnwrapValue(v)
-	if result.IsValid() {
-		t.Errorf(
-			"UnwrapValue should return invalid value for nested nil pointers, got: %v",
-			result,
-		)
 	}
 }
 
@@ -671,23 +505,5 @@ func TestIsWrapperType_nilInterfaceValue(t *testing.T) {
 	result := IsWrapperType(v)
 	if result {
 		t.Error("IsWrapperType should return false for nil interface")
-	}
-}
-
-func TestUnwrapValue_methodNotValid(t *testing.T) {
-	t.Parallel()
-
-	// Edge case: struct that IsWrapperType thinks is valid, but method becomes invalid
-	// This tests the defensive check at line 177-179
-	// Using a non-wrapper struct to ensure method lookup fails
-	regular := RegularStruct{Field: "test"}
-	v := reflect.ValueOf(regular)
-
-	result := UnwrapValue(v)
-	if result.IsValid() {
-		t.Errorf(
-			"UnwrapValue should return invalid value for non-wrapper type, got: %v",
-			result,
-		)
 	}
 }

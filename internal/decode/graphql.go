@@ -3,8 +3,8 @@
 // UnmarshalGraphQL extends the standard encoding/json semantics with the
 // patterns needed by the gqlclient library: inline fragments dispatched on
 // __typename, embedded structs as fragments, ordered maps ([][2]any) as
-// alternative storage to struct fields, and transparent unwrapping of types
-// that implement types.GraphQLWrapper.
+// alternative storage to struct fields, and transparent unwrapping of wrapper
+// structs marked with the `wrapped:"true"` field tag.
 package decode
 
 import (
@@ -33,25 +33,20 @@ const (
 //
 // # Wrapper Types
 //
-// UnmarshalGraphQL supports transparent unwrapping of container types that
-// implement the GetGraphQLWrapped() method. This allows GraphQL schemas with
-// wrapper/container patterns to be cleanly represented in Go.
+// UnmarshalGraphQL supports transparent unwrapping of wrapper structs: a struct
+// with a field tagged `wrapped:"true"` is bypassed, and JSON data is decoded
+// directly into that field. This lets GraphQL schemas with wrapper/container
+// patterns be cleanly represented in Go.
 //
-// Convention: Any type implementing GetGraphQLWrapped() MUST have an exported
-// field named "Value" that holds the wrapped data. During unmarshaling, the
-// library will detect the GetGraphQLWrapped() method and unmarshal JSON data
-// directly into the Value field, bypassing the wrapper.
-//
-// Rationale: The GetGraphQLWrapped() method returns a value (used during query
-// construction for reflection), but unmarshaling requires a writable field
-// reference. The "Value" field provides this writable target.
+// The tag is the single source of truth — it both marks the type as a wrapper
+// and identifies the writable field, so query construction and decoding always
+// agree on the same field.
 //
 // Example:
 //
 //	type Wrapper[T any] struct {
-//	    Value T  // REQUIRED: Must be named reflectutil.WrapperFieldName ("Value")
+//	    Value T `wrapped:"true"` // the wrapped field; any name works
 //	}
-//	func (w Wrapper[T]) GetGraphQLWrapped() T { return w.Value }
 func UnmarshalGraphQL(data []byte, v any) error {
 	dec := json.NewDecoder(bytes.NewReader(data))
 	dec.UseNumber()

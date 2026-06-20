@@ -7,7 +7,10 @@ All notable changes to this project are documented in this file.
 Internal cleanup of the request/response path: two divergent HTTP
 execution paths are collapsed into one (fixing two latent bugs), and
 error decoration is consolidated behind the error module. See
-`docs/adr/0001-public-api-surface.md` for the API-shape rationale.
+`docs/adr/0001-public-api-surface.md` for the API-shape rationale. The
+wrapper-type convention also moves from a generic `GetGraphQLWrapped()`
+method to a single `wrapped:"true"` struct tag — see
+`docs/adr/0003-wrapper-marker-is-a-tag.md`.
 
 ### Breaking changes
 
@@ -31,6 +34,28 @@ error decoration is consolidated behind the error module. See
   single place. Per ADR-0001, error *construction* is machinery — consume
   errors via `errors.Is`, `Error.GetCode`, and `Error.GetInternalExtensions`,
   which stay public.
+
+- The wrapper-type marker is now the `wrapped:"true"` struct tag instead of
+  a `GetGraphQLWrapped()` method. A wrapper is a struct with exactly one field
+  tagged `wrapped:"true"`; that tag both marks the type and locates the wrapped
+  field, which need no longer be named `Value`. The exported
+  `types.GraphQLWrapper` interface (and `types.GraphqlWrapperInterface`) is
+  removed. To migrate, tag the wrapped field and delete the method:
+
+  ```go
+  // before
+  type Wrapper[T any] struct{ Value T }
+  func (w Wrapper[T]) GetGraphQLWrapped() T { return w.Value }
+
+  // after
+  type Wrapper[T any] struct {
+      Value T `wrapped:"true"`
+  }
+  ```
+
+  As a side effect, anonymously embedding a wrapper no longer drops the
+  embedding struct's sibling fields (method promotion previously made the
+  parent transparent). See `docs/adr/0003-wrapper-marker-is-a-tag.md`.
 
 ### Fixes
 

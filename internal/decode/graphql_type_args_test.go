@@ -19,15 +19,11 @@ import (
 // This test pins the v0.14 contract and must pass.
 
 type slugCardWrapper[T any] struct {
-	Value T
+	Value T `wrapped:"true"`
 }
 
 func (slugCardWrapper[T]) GetGraphQLType() string {
 	return "card(slug:$slug)"
-}
-
-func (w slugCardWrapper[T]) GetGraphQLWrapped() T {
-	return w.Value
 }
 
 type slugCardInner struct {
@@ -55,15 +51,11 @@ func TestUnmarshalGraphQL_GraphQLTypeWithArgsMatchesBareKey(t *testing.T) {
 // Aliased GraphQLType return: "x: card(slug:$slug)" should match
 // the response key "x" (the alias), not "card".
 type aliasedCardWrapper struct {
-	Value slugCardInner
+	Value slugCardInner `wrapped:"true"`
 }
 
 func (aliasedCardWrapper) GetGraphQLType() string {
 	return "x: card(slug:$slug)"
-}
-
-func (w aliasedCardWrapper) GetGraphQLWrapped() slugCardInner {
-	return w.Value
 }
 
 func TestUnmarshalGraphQL_GraphQLTypeWithAliasMatchesAlias(t *testing.T) {
