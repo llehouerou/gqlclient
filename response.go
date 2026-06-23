@@ -39,42 +39,69 @@ func copyResponseForDebug(r io.Reader) ([]byte, *bytes.Reader, error) {
 	return respBody, bytes.NewReader(respBody), nil
 }
 
-// DecodeResponse decodes a GraphQL JSON response into raw data and errors.
-// It returns the raw data bytes (if present) and any GraphQL errors.
-func (c *Client) DecodeResponse(reader io.Reader) ([]byte, Errors) {
+// Response is the decoded top-level GraphQL response envelope, per the spec's
+// {data, errors, extensions} shape.
+//
+//   - Data holds the raw "data" JSON for later decoding; nil when absent.
+//   - Errors holds the "errors" array; nil/empty when the operation produced
+//     no GraphQL errors.
+//   - Extensions holds the top-level "extensions" map of server-provided
+//     metadata (tracing, query cost, rate limits, request IDs, ...); nil when
+//     the server omits it.
+type Response struct {
+	Data       json.RawMessage
+	Errors     Errors
+	Extensions map[string]any
+}
+
+// DecodeResponse decodes a GraphQL JSON response envelope into a *Response.
+//
+// The returned Errors is non-nil only on a local decode failure (the body is
+// not valid JSON); in that case the *Response is nil. A well-formed envelope
+// returns (resp, nil) even when it carries GraphQL errors — those live in
+// resp.Errors, and any top-level metadata in resp.Extensions.
+func (c *Client) DecodeResponse(reader io.Reader) (*Response, Errors) {
 	var out struct {
-		Data   *json.RawMessage
-		Errors Errors
+		Data       json.RawMessage `json:"data"`
+		Errors     Errors          `json:"errors"`
+		Extensions map[string]any  `json:"extensions"`
 	}
 
-	err := json.NewDecoder(reader).Decode(&out)
-	if err != nil {
+	if err := json.NewDecoder(reader).Decode(&out); err != nil {
 		return nil, Errors{newJSONDecodeError(err)}
 	}
 
-	var rawData []byte
-	if out.Data != nil && len(*out.Data) > 0 {
-		rawData = *out.Data
-	}
-
-	if len(out.Errors) > 0 {
-		return rawData, out.Errors
-	}
-
-	return rawData, nil
+	return &Response{
+		Data:       out.Data,
+		Errors:     out.Errors,
+		Extensions: out.Extensions,
+	}, nil
 }
 
-// processResponse handles the unmarshaling of response data and error aggregation.
+// processResponse unmarshals env.Data into v and combines the server's GraphQL
+// errors with any local unmarshal failure into a single returned error.
+//
+// transportErrs carries build/round-trip/decode failures and short-circuits:
+// when non-empty, env is nil and those errors are returned as-is. Otherwise the
+// returned error is env.Errors plus a decode error if v could not be populated;
+// env.Errors itself is left as the pure server-side error set.
 func (c *Client) processResponse(
 	v any,
-	data []byte,
+	env *Response,
 	resp *http.Response,
 	respBody []byte,
-	errs Errors,
+	transportErrs Errors,
 ) error {
-	if len(data) > 0 {
-		err := decode.UnmarshalGraphQL(data, v)
-		if err != nil {
+	if len(transportErrs) > 0 {
+		return transportErrs
+	}
+	if env == nil {
+		return nil
+	}
+
+	errs := env.Errors
+	if len(env.Data) > 0 {
+		if err := decode.UnmarshalGraphQL(env.Data, v); err != nil {
 			we := c.decorate(
 				newGraphQLDecodeError(err),
 				errorContext{resp: resp, respBody: respBody},

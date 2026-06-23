@@ -2,6 +2,37 @@
 
 All notable changes to this project are documented in this file.
 
+## Unreleased
+
+Surface two pieces of the GraphQL response that the client previously
+discarded: the per-error `path` and the top-level `extensions` map.
+
+### Additions
+
+- `Error.Path` (`[]any`) now carries the GraphQL spec error path — the
+  response path to the field that failed. `Error.PathString` renders it as a
+  readable `hero.friends.2.name` (list indices, decoded as `float64`, print as
+  integers), and `Error.Error()` includes the path when present.
+- `Response` models the full `{data, errors, extensions}` envelope, with
+  `Data` (`json.RawMessage`), `Errors`, and `Extensions` (`map[string]any`).
+- `Client.QueryWithResponse` / `Client.MutateWithResponse` mirror `Query` /
+  `Mutate` — the target struct is still populated — and additionally return the
+  `*Response`, giving access to top-level `extensions` (tracing, query cost,
+  rate limits, request IDs, …) and the raw data/errors. On a transport failure
+  the `*Response` is nil; on partial data with GraphQL errors, both a non-nil
+  `*Response` and a non-nil error are returned.
+- `Client.ExecuteQueryWithResponse` is the same envelope-returning variant for
+  the pre-built query path (the counterpart of `ExecuteQuery`).
+
+### Breaking changes
+
+- `Client.DecodeResponse` now returns `(*Response, Errors)` instead of
+  `([]byte, Errors)`. Server-side GraphQL errors move into `Response.Errors`;
+  the returned `Errors` is now non-nil only on a local JSON-decode failure (with
+  a nil `*Response` in that case). Raw `data` bytes are now `Response.Data`.
+- `Error.Error()` now includes a `Path: <path>` segment when the error carries
+  a path. Update any code matching the exact error string.
+
 ## v0.17.0 (2026-06-20)
 
 Internal cleanup of the request/response path: two divergent HTTP

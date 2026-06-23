@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"strconv"
 	"strings"
 )
 
@@ -68,7 +69,12 @@ type Errors []Error
 
 // Error represents a single error from a GraphQL response.
 type Error struct {
-	Message    string         `json:"message"`
+	Message string `json:"message"`
+	// Path is the response path to the field that errored, per the GraphQL
+	// spec: field names are strings and list indices are 0-indexed integers
+	// (decoded as float64 inside the any). Use PathString for a readable
+	// "hero.friends.2.name" rendering. Nil when the server omits it.
+	Path       []any          `json:"path,omitempty"`
 	Extensions map[string]any `json:"extensions"`
 	Locations  []struct {
 		Line   int `json:"line"`
@@ -104,7 +110,37 @@ type InternalExtensions struct {
 
 // Error implements error interface.
 func (e Error) Error() string {
+	if p := e.PathString(); p != "" {
+		return fmt.Sprintf(
+			"Message: %s, Path: %s, Locations: %+v",
+			e.Message, p, e.Locations,
+		)
+	}
 	return fmt.Sprintf("Message: %s, Locations: %+v", e.Message, e.Locations)
+}
+
+// PathString renders Path as a dotted string, e.g. "hero.friends.2.name".
+// List indices arrive as float64 (JSON numbers) and are rendered as integers.
+// Returns "" when Path is empty.
+func (e Error) PathString() string {
+	if len(e.Path) == 0 {
+		return ""
+	}
+	var b strings.Builder
+	for i, seg := range e.Path {
+		if i > 0 {
+			b.WriteByte('.')
+		}
+		switch v := seg.(type) {
+		case string:
+			b.WriteString(v)
+		case float64:
+			b.WriteString(strconv.FormatFloat(v, 'f', -1, 64))
+		default:
+			fmt.Fprintf(&b, "%v", v)
+		}
+	}
+	return b.String()
 }
 
 // Is reports whether target is one of the package-level sentinel

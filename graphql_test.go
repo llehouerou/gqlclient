@@ -68,7 +68,7 @@ func TestClient_Query_partialDataWithErrorResponse(t *testing.T) {
 	if err == nil {
 		t.Fatal("got error: nil, want: non-nil")
 	}
-	if got, want := err.Error(), "Message: Could not resolve to a node with the global id of 'NotExist', Locations: [{Line:10 Column:4}]"; got != want {
+	if got, want := err.Error(), "Message: Could not resolve to a node with the global id of 'NotExist', Path: node2, Locations: [{Line:10 Column:4}]"; got != want {
 		t.Errorf("got error: %v, want: %v", got, want)
 	}
 
@@ -123,7 +123,7 @@ func TestClient_Query_partialDataRawQueryWithErrorResponse(t *testing.T) {
 	if err == nil {
 		t.Fatal("got error: nil, want: non-nil\n")
 	}
-	if got, want := err.Error(), "Message: Could not resolve to a node with the global id of 'NotExist', Locations: [{Line:10 Column:4}]"; got != want {
+	if got, want := err.Error(), "Message: Could not resolve to a node with the global id of 'NotExist', Path: node2, Locations: [{Line:10 Column:4}]"; got != want {
 		t.Errorf("got error: %v, want: %v\n", got, want)
 	}
 	if q.Node1 == nil ||
@@ -1764,9 +1764,15 @@ func TestClient_decodeResponse(t *testing.T) {
 		responseBody := `{"data":{"user":{"name":"Alice","id":"123"}}}`
 		reader := strings.NewReader(responseBody)
 
-		rawData, errs := client.DecodeResponse(reader)
-		if errs != nil {
-			t.Fatalf("unexpected errors: %v", errs)
+		resp, decErrs := client.DecodeResponse(reader)
+		if decErrs != nil {
+			t.Fatalf("unexpected local decode errors: %v", decErrs)
+		}
+		if resp == nil {
+			t.Fatal("expected non-nil response")
+		}
+		if len(resp.Errors) != 0 {
+			t.Fatalf("unexpected GraphQL errors: %v", resp.Errors)
 		}
 
 		var result struct {
@@ -1775,7 +1781,7 @@ func TestClient_decodeResponse(t *testing.T) {
 				ID   string `json:"id"`
 			} `json:"user"`
 		}
-		if err := json.Unmarshal(rawData, &result); err != nil {
+		if err := json.Unmarshal(resp.Data, &result); err != nil {
 			t.Fatalf("failed to unmarshal raw data: %v", err)
 		}
 
@@ -1794,23 +1800,26 @@ func TestClient_decodeResponse(t *testing.T) {
 		responseBody := `{"errors":[{"message":"field not found","locations":[{"line":1,"column":2}]}]}`
 		reader := strings.NewReader(responseBody)
 
-		rawData, errs := client.DecodeResponse(reader)
-		if errs == nil {
-			t.Fatal("expected errors, got nil")
+		resp, decErrs := client.DecodeResponse(reader)
+		if decErrs != nil {
+			t.Fatalf("unexpected local decode errors: %v", decErrs)
+		}
+		if resp == nil {
+			t.Fatal("expected non-nil response")
 		}
 
-		if len(errs) != 1 {
-			t.Fatalf("expected 1 error, got %d", len(errs))
+		if len(resp.Errors) != 1 {
+			t.Fatalf("expected 1 GraphQL error, got %d", len(resp.Errors))
 		}
 
-		if errs[0].Message != "field not found" {
-			t.Errorf("expected message 'field not found', got %q", errs[0].Message)
+		if resp.Errors[0].Message != "field not found" {
+			t.Errorf("expected message 'field not found', got %q", resp.Errors[0].Message)
 		}
 
-		if rawData != nil {
+		if len(resp.Data) != 0 {
 			t.Errorf(
 				"expected nil raw data with errors only, got %s",
-				string(rawData),
+				string(resp.Data),
 			)
 		}
 	})
@@ -1822,21 +1831,24 @@ func TestClient_decodeResponse(t *testing.T) {
 		responseBody := `{"data":{"user":{"name":"Bob"}},"errors":[{"message":"some field failed"}]}`
 		reader := strings.NewReader(responseBody)
 
-		rawData, errs := client.DecodeResponse(reader)
-		if errs == nil {
-			t.Fatal("expected errors, got nil")
+		resp, decErrs := client.DecodeResponse(reader)
+		if decErrs != nil {
+			t.Fatalf("unexpected local decode errors: %v", decErrs)
+		}
+		if resp == nil {
+			t.Fatal("expected non-nil response")
 		}
 
-		if len(errs) != 1 {
-			t.Fatalf("expected 1 error, got %d", len(errs))
+		if len(resp.Errors) != 1 {
+			t.Fatalf("expected 1 GraphQL error, got %d", len(resp.Errors))
 		}
 
-		if errs[0].Message != "some field failed" {
-			t.Errorf("expected message 'some field failed', got %q", errs[0].Message)
+		if resp.Errors[0].Message != "some field failed" {
+			t.Errorf("expected message 'some field failed', got %q", resp.Errors[0].Message)
 		}
 
 		// Should still have partial data
-		if rawData == nil {
+		if len(resp.Data) == 0 {
 			t.Fatal("expected raw data with partial response, got nil")
 		}
 
@@ -1845,7 +1857,7 @@ func TestClient_decodeResponse(t *testing.T) {
 				Name string `json:"name"`
 			} `json:"user"`
 		}
-		if err := json.Unmarshal(rawData, &result); err != nil {
+		if err := json.Unmarshal(resp.Data, &result); err != nil {
 			t.Fatalf("failed to unmarshal partial data: %v", err)
 		}
 
@@ -1861,16 +1873,19 @@ func TestClient_decodeResponse(t *testing.T) {
 		responseBody := `{invalid json}`
 		reader := strings.NewReader(responseBody)
 
-		_, errs := client.DecodeResponse(reader)
-		if errs == nil {
+		resp, decErrs := client.DecodeResponse(reader)
+		if decErrs == nil {
 			t.Fatal("expected error for invalid JSON, got nil")
 		}
-
-		if len(errs) != 1 {
-			t.Fatalf("expected 1 error, got %d", len(errs))
+		if resp != nil {
+			t.Errorf("expected nil response on decode failure, got %v", resp)
 		}
 
-		if code, ok := errs[0].Extensions["code"].(string); !ok ||
+		if len(decErrs) != 1 {
+			t.Fatalf("expected 1 error, got %d", len(decErrs))
+		}
+
+		if code, ok := decErrs[0].Extensions["code"].(string); !ok ||
 			code != graphql.ErrCodeJSONDecode {
 			t.Errorf("expected error code %q, got %v", graphql.ErrCodeJSONDecode, code)
 		}

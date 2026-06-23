@@ -105,7 +105,7 @@ func (c *Client) request(
 	ctx context.Context,
 	query string,
 	variables any,
-) ([]byte, *http.Response, []byte, Errors) {
+) (*Response, *http.Response, []byte, Errors) {
 	// Build HTTP request with JSON body
 	request, reqBody, err := c.BuildRequest(ctx, query, variables)
 	if err != nil {
@@ -142,34 +142,30 @@ func (c *Client) request(
 		decodeFrom = r
 	}
 
-	// Decode GraphQL response
-	rawData, gqlErrors := c.DecodeResponse(decodeFrom)
-
-	// Handle JSON decode errors
-	if len(gqlErrors) > 0 {
-		ctx := errorContext{
-			req:      request,
-			reqBody:  reqBody,
-			resp:     resp,
-			respBody: respBody,
-		}
-
-		// Check if it's a decode error (has ErrCodeJSONDecode code)
-		if code, ok := gqlErrors[0].Extensions["code"].(string); ok &&
-			code == ErrCodeJSONDecode {
-			we := c.newRequestError(
-				ErrCodeJSONDecode,
-				fmt.Errorf("%s", gqlErrors[0].Message),
-				ctx,
-			)
-			return nil, nil, nil, Errors{we}
-		}
-
-		// Decorate the first GraphQL error with request/response context.
-		gqlErrors[0] = c.decorate(gqlErrors[0], ctx)
-
-		return rawData, resp, respBody, gqlErrors
+	errCtx := errorContext{
+		req:      request,
+		reqBody:  reqBody,
+		resp:     resp,
+		respBody: respBody,
 	}
 
-	return rawData, resp, respBody, nil
+	// Decode the GraphQL response envelope. A non-nil decErrs here is a local
+	// JSON decode failure (the body is not valid JSON), classified as a
+	// transport-level error; GraphQL errors live inside env.Errors.
+	env, decErrs := c.DecodeResponse(decodeFrom)
+	if len(decErrs) > 0 {
+		we := c.newRequestError(
+			ErrCodeJSONDecode,
+			fmt.Errorf("%s", decErrs[0].Message),
+			errCtx,
+		)
+		return nil, nil, nil, Errors{we}
+	}
+
+	// Decorate the first GraphQL error with request/response context (debug).
+	if len(env.Errors) > 0 {
+		env.Errors[0] = c.decorate(env.Errors[0], errCtx)
+	}
+
+	return env, resp, respBody, nil
 }

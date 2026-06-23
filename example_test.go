@@ -2,6 +2,7 @@ package graphql_test
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"net/http"
 	"time"
@@ -32,6 +33,44 @@ func ExampleClient_Query() {
 		return
 	}
 	fmt.Println("viewer:", q.Viewer.Login)
+}
+
+// ExampleClient_QueryWithResponse shows reading top-level response extensions
+// (tracing, query cost, rate limits, request IDs, …) while still populating
+// the struct in place.
+func ExampleClient_QueryWithResponse() {
+	client := graphql.NewClient("https://api.example.com/graphql", nil)
+
+	var q struct {
+		Viewer struct{ Login string }
+	}
+	resp, err := client.QueryWithResponse(context.Background(), &q, nil)
+	if err != nil {
+		fmt.Println("query failed:", err)
+		return
+	}
+	fmt.Println("viewer:", q.Viewer.Login)
+	if cost, ok := resp.Extensions["cost"]; ok {
+		fmt.Println("query cost:", cost)
+	}
+}
+
+// ExampleError_PathString shows locating which field failed in a partial
+// response by inspecting the GraphQL error path.
+func ExampleError_PathString() {
+	client := graphql.NewClient("https://api.example.com/graphql", nil)
+
+	var q struct {
+		Hero struct{ Name string }
+	}
+	err := client.Query(context.Background(), &q, nil)
+
+	var gqlErrs graphql.Errors
+	if errors.As(err, &gqlErrs) {
+		for _, e := range gqlErrs {
+			fmt.Printf("%s failed: %s\n", e.PathString(), e.Message)
+		}
+	}
 }
 
 // ExampleClient_WithHeader shows the typical pattern for setting an

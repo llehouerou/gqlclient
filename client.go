@@ -121,8 +121,28 @@ func (c *Client) ExecuteQuery(
 	variables map[string]any,
 	options ...Option,
 ) error {
-	data, resp, respBody, errs := c.request(ctx, query, variables) //nolint:bodyclose // closed inside c.request
-	return c.processResponse(v, data, resp, respBody, errs)
+	_, err := c.ExecuteQueryWithResponse(ctx, query, v, variables, options...)
+	return err
+}
+
+// ExecuteQueryWithResponse behaves like ExecuteQuery — it runs a pre-built
+// query string and unmarshals the response into v — but additionally returns
+// the decoded response envelope so callers can read top-level extensions
+// (tracing, query cost, rate limits, request IDs, ...) and the raw
+// data/errors.
+//
+// On a transport-level failure the returned *Response is nil. When the server
+// returns partial data alongside GraphQL errors, both a non-nil *Response and a
+// non-nil error are returned.
+func (c *Client) ExecuteQueryWithResponse(
+	ctx context.Context,
+	query string,
+	v any,
+	variables map[string]any,
+	options ...Option,
+) (*Response, error) {
+	env, resp, respBody, errs := c.request(ctx, query, variables) //nolint:bodyclose // closed inside c.request
+	return env, c.processResponse(v, env, resp, respBody, errs)
 }
 
 // ExecuteQueryRaw executes a pre-built GraphQL query string and returns the
@@ -135,11 +155,14 @@ func (c *Client) ExecuteQueryRaw(
 	variables map[string]any,
 	options ...Option,
 ) ([]byte, error) {
-	data, _, _, errs := c.request(ctx, query, variables) //nolint:bodyclose // closed inside c.request
+	env, _, _, errs := c.request(ctx, query, variables) //nolint:bodyclose // closed inside c.request
 	if len(errs) > 0 {
-		return data, errs
+		return nil, errs
 	}
-	return data, nil
+	if len(env.Errors) > 0 {
+		return env.Data, env.Errors
+	}
+	return env.Data, nil
 }
 
 // clone creates a copy of the Client with all fields preserved.
@@ -287,6 +310,35 @@ func UnmarshalGraphQL(data []byte, v any) error {
 	return decode.UnmarshalGraphQL(data, v)
 }
 
+// QueryWithResponse behaves like Query — it derives the query from q and
+// populates q with the response data — but additionally returns the decoded
+// response envelope so callers can read top-level extensions (tracing, query
+// cost, rate limits, request IDs, ...) and the raw data/errors.
+//
+// On a transport-level failure the returned *Response is nil. When the server
+// returns partial data alongside GraphQL errors, both a non-nil *Response and a
+// non-nil error are returned.
+func (c *Client) QueryWithResponse(
+	ctx context.Context,
+	q any,
+	variables any,
+	options ...Option,
+) (*Response, error) {
+	return c.executeAndUnmarshalWithResponse(
+		ctx, queryOperation, q, variables, options...)
+}
+
+// MutateWithResponse is the mutation counterpart of QueryWithResponse.
+func (c *Client) MutateWithResponse(
+	ctx context.Context,
+	m any,
+	variables any,
+	options ...Option,
+) (*Response, error) {
+	return c.executeAndUnmarshalWithResponse(
+		ctx, mutationOperation, m, variables, options...)
+}
+
 // executeAndUnmarshal executes a single GraphQL operation and unmarshals the
 // response into v.
 func (c *Client) executeAndUnmarshal(
@@ -296,14 +348,29 @@ func (c *Client) executeAndUnmarshal(
 	variables any,
 	options ...Option,
 ) error {
+	_, err := c.executeAndUnmarshalWithResponse(
+		ctx, op, v, variables, options...)
+	return err
+}
+
+// executeAndUnmarshalWithResponse executes a single GraphQL operation,
+// unmarshals the response into v, and returns the decoded response envelope
+// alongside the combined error.
+func (c *Client) executeAndUnmarshalWithResponse(
+	ctx context.Context,
+	op operationType,
+	v any,
+	variables any,
+	options ...Option,
+) (*Response, error) {
 	//nolint:bodyclose // closed inside c.request, called by c.constructQueryAndExecute
-	data, resp, respBody, errs := c.constructQueryAndExecute(
+	env, resp, respBody, errs := c.constructQueryAndExecute(
 		ctx,
 		op,
 		v,
 		variables,
 		options...)
-	return c.processResponse(v, data, resp, respBody, errs)
+	return env, c.processResponse(v, env, resp, respBody, errs)
 }
 
 // executeForRawJSON executes a single GraphQL operation and returns the raw
@@ -316,16 +383,19 @@ func (c *Client) executeForRawJSON(
 	options ...Option,
 ) ([]byte, error) {
 	//nolint:bodyclose // closed inside c.request, called by c.constructQueryAndExecute
-	data, _, _, err := c.constructQueryAndExecute(
+	env, _, _, errs := c.constructQueryAndExecute(
 		ctx,
 		op,
 		v,
 		variables,
 		options...)
-	if len(err) > 0 {
-		return data, err
+	if len(errs) > 0 {
+		return nil, errs
 	}
-	return data, nil
+	if len(env.Errors) > 0 {
+		return env.Data, env.Errors
+	}
+	return env.Data, nil
 }
 
 // constructQueryAndExecute constructs a GraphQL query from the provided struct
@@ -336,7 +406,7 @@ func (c *Client) constructQueryAndExecute(
 	v any,
 	variables any,
 	options ...Option,
-) ([]byte, *http.Response, []byte, Errors) {
+) (*Response, *http.Response, []byte, Errors) {
 	var query string
 	var err error
 	switch op {
