@@ -10,6 +10,10 @@ type ParsedTag struct {
 	Arguments string
 	// Alias is the field alias (before the colon), if any.
 	Alias string
+	// Directives holds the field directives verbatim ("@include(if: $x)"),
+	// including the leading "@", if any. The query builder emits them; the
+	// decoder ignores them and matches on FieldName/Alias.
+	Directives string
 	// IsFragment indicates whether this is a GraphQL fragment ("...").
 	IsFragment bool
 	// TypeName is the typename for fragments ("... on TypeName").
@@ -21,6 +25,7 @@ type ParsedTag struct {
 //   - "name" -> {FieldName: "name"}
 //   - "height(unit: METER)" -> {FieldName: "height", Arguments: "unit: METER"}
 //   - "node1: node(id: $id)" -> {FieldName: "node", Alias: "node1", Arguments: "id: $id"}
+//   - "email @include(if: $x)" -> {FieldName: "email", Directives: "@include(if: $x)"}
 //   - "... on Droid" -> {IsFragment: true, TypeName: "Droid"}
 func ParseGraphQLTag(tag string) (ParsedTag, error) {
 	tag = strings.TrimSpace(tag)
@@ -50,6 +55,15 @@ func ParseGraphQLTag(tag string) (ParsedTag, error) {
 		return parsed, nil
 	}
 
+	// Split off field directives before parsing the selection, so the
+	// directive's own parentheses are never mistaken for field arguments.
+	// A directive starts at the first "@" that sits outside any parentheses;
+	// an "@" inside an argument value (e.g. handle: "@alice") is ignored.
+	if dirIdx := directiveIndex(tag); dirIdx != -1 {
+		parsed.Directives = strings.TrimSpace(tag[dirIdx:])
+		tag = strings.TrimSpace(tag[:dirIdx])
+	}
+
 	// Find arguments first (content in parentheses)
 	var fieldPart string
 	parenIdx := strings.Index(tag, "(")
@@ -73,4 +87,27 @@ func ParseGraphQLTag(tag string) (ParsedTag, error) {
 	}
 
 	return parsed, nil
+}
+
+// directiveIndex returns the index of the first "@" that begins a field
+// directive — that is, the first "@" found outside any parentheses — or -1 if
+// the tag carries no directive. Tracking parenthesis depth keeps an "@" inside
+// an argument value (e.g. handle: "@alice") from being treated as a directive.
+func directiveIndex(tag string) int {
+	depth := 0
+	for i := range len(tag) {
+		switch tag[i] {
+		case '(':
+			depth++
+		case ')':
+			if depth > 0 {
+				depth--
+			}
+		case '@':
+			if depth == 0 {
+				return i
+			}
+		}
+	}
+	return -1
 }

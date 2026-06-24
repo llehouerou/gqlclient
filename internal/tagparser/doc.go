@@ -20,6 +20,9 @@
 //	Aliased field:
 //	  `graphql:"node1: node(id: $id)"`
 //
+//	Field with directives:
+//	  `graphql:"email @include(if: $withEmail)"`
+//
 //	Inline fragment:
 //	  `graphql:"... on Droid"`
 //
@@ -32,6 +35,7 @@
 //   - FieldName: GraphQL field name (after alias if present)
 //   - Arguments: Content inside parentheses (e.g., "unit: METER")
 //   - Alias: Field alias (before the colon) if any
+//   - Directives: Field directives verbatim (e.g., "@include(if: $x)")
 //   - IsFragment: Whether this is a fragment ("...")
 //   - TypeName: The typename for fragments ("... on TypeName")
 //

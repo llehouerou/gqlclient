@@ -33,7 +33,16 @@ discarded: the per-error `path` and the top-level `extensions` map.
 - `Error.Error()` now includes a `Path: <path>` segment when the error carries
   a path. Update any code matching the exact error string.
 
-## v0.17.0 (2026-06-20)
+### Fixes
+
+- Field directives (`@skip`, `@include`, …) now work in the typed query path. A
+  tag such as `graphql:"email @include(if: $withEmail)"` was already emitted
+  correctly, but the decoder mistook the directive's parentheses for field
+  arguments and failed to match the response field (`struct field for "email"
+  doesn't exist …`) whenever the field had a directive but no arguments. The tag
+  parser now splits directives off at the first `@` outside parentheses, so the
+  field name matches and an `@`-in-argument value (e.g. `handle: "@alice"`) is
+  left untouched.
 
 Internal cleanup of the request/response path: two divergent HTTP
 execution paths are collapsed into one (fixing two latent bugs), and

@@ -382,6 +382,118 @@ func TestParseGraphQLTag_EscapedQuotesInArguments(t *testing.T) {
 	}
 }
 
+func TestParseGraphQLTag_DirectiveNoArguments(t *testing.T) {
+	t.Parallel()
+
+	// A field directive with no field arguments: the directive's parentheses
+	// must not be mistaken for field arguments.
+	tag := "email @include(if: $withEmail)"
+
+	parsed, err := ParseGraphQLTag(tag)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	if parsed.FieldName != "email" {
+		t.Errorf("expected FieldName 'email', got '%s'", parsed.FieldName)
+	}
+	if parsed.Arguments != "" {
+		t.Errorf("expected empty Arguments, got '%s'", parsed.Arguments)
+	}
+	if parsed.Directives != "@include(if: $withEmail)" {
+		t.Errorf(
+			"expected Directives '@include(if: $withEmail)', got '%s'",
+			parsed.Directives,
+		)
+	}
+}
+
+func TestParseGraphQLTag_DirectiveWithFieldArguments(t *testing.T) {
+	t.Parallel()
+
+	tag := "posts(first: 10) @skip(if: $hidePosts)"
+
+	parsed, err := ParseGraphQLTag(tag)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	if parsed.FieldName != "posts" {
+		t.Errorf("expected FieldName 'posts', got '%s'", parsed.FieldName)
+	}
+	if parsed.Arguments != "first: 10" {
+		t.Errorf("expected Arguments 'first: 10', got '%s'", parsed.Arguments)
+	}
+	if parsed.Directives != "@skip(if: $hidePosts)" {
+		t.Errorf(
+			"expected Directives '@skip(if: $hidePosts)', got '%s'",
+			parsed.Directives,
+		)
+	}
+}
+
+func TestParseGraphQLTag_AliasWithDirective(t *testing.T) {
+	t.Parallel()
+
+	tag := "e: email @include(if: $x)"
+
+	parsed, err := ParseGraphQLTag(tag)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	if parsed.Alias != "e" {
+		t.Errorf("expected Alias 'e', got '%s'", parsed.Alias)
+	}
+	if parsed.FieldName != "email" {
+		t.Errorf("expected FieldName 'email', got '%s'", parsed.FieldName)
+	}
+	if parsed.Directives != "@include(if: $x)" {
+		t.Errorf("expected Directives '@include(if: $x)', got '%s'", parsed.Directives)
+	}
+}
+
+func TestParseGraphQLTag_DirectiveWithAtInArgumentValue(t *testing.T) {
+	t.Parallel()
+
+	// An '@' inside an argument value must not be taken for the directive
+	// boundary; only an '@' outside parentheses starts a directive.
+	tag := `user(handle: "@alice") @include(if: $x)`
+
+	parsed, err := ParseGraphQLTag(tag)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	if parsed.FieldName != "user" {
+		t.Errorf("expected FieldName 'user', got '%s'", parsed.FieldName)
+	}
+	if parsed.Arguments != `handle: "@alice"` {
+		t.Errorf("expected Arguments 'handle: \"@alice\"', got '%s'", parsed.Arguments)
+	}
+	if parsed.Directives != "@include(if: $x)" {
+		t.Errorf("expected Directives '@include(if: $x)', got '%s'", parsed.Directives)
+	}
+}
+
+func TestParseGraphQLTag_DirectiveWithoutParentheses(t *testing.T) {
+	t.Parallel()
+
+	tag := "name @deprecated"
+
+	parsed, err := ParseGraphQLTag(tag)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	if parsed.FieldName != "name" {
+		t.Errorf("expected FieldName 'name', got '%s'", parsed.FieldName)
+	}
+	if parsed.Directives != "@deprecated" {
+		t.Errorf("expected Directives '@deprecated', got '%s'", parsed.Directives)
+	}
+}
+
 func TestParseGraphQLTag_LongFragmentTypename(t *testing.T) {
 	t.Parallel()
 
